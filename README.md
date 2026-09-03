@@ -11,8 +11,8 @@ foundations & trustworthy measurement**.
 
 | Phase | State |
 |---|---|
-| P0 foundations + fix the silence leak + re-measure | in progress |
-| P1 a detector that generalises (RawNet2 / AASIST / SSL-AASIST + augmentation) | not started |
+| P0 foundations + fix the silence leak + re-measure | **done** (full-corpus re-run pending on mains power) |
+| P1 a detector that generalises (RawNet2 / AASIST / SSL-AASIST + augmentation) | next |
 | P2 real streaming (VAD, sliding window, EMA, latency budget) | not started |
 | P3 speaker verification + prosody branch + calibrated fusion | not started |
 | P4 prevention / policy engine | not started |
@@ -41,6 +41,14 @@ Then build the manifests (the single source of truth for splits):
 ```bash
 python scripts/build_manifests.py
 ```
+
+## Results so far
+
+The silence leak is fixed — silence-only EER went from **13–15%** (shortcut) to
+**50–59%** (chance). With the shortcut gone the handcrafted baseline is honestly
+weak: **7.6%** dev EER, **33.9%** on unknown attacks, **58.7%** on In-the-Wild.
+The old 1.83% was mostly the artifact. Full breakdown:
+[docs/baseline_results.md](docs/baseline_results.md).
 
 ## Reproduce the baseline
 
