@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from voiceguard.audio import preprocess_file
+from voiceguard.audio import load_wave, normalize_loudness
 from voiceguard.audio.preprocess import PreprocessConfig
 from voiceguard.config import load_config, preprocess_config, resolve
 from voiceguard.data import load_manifest
@@ -87,12 +87,15 @@ def main() -> None:
 
 
 def _run_silence_ablation(cfg, pcfg: PreprocessConfig, fp, seed, scaler, models, tables) -> None:
-    """Re-preprocesses a balanced dev subset from raw, strips speech, extracts
-    features, and scores. A model trained through the anti-shortcut front-end
-    must land near 50% EER here."""
+    """Load a balanced dev subset from RAW audio, keep only the non-speech
+    segments, loudness-match them (so level isn't the tell), extract features
+    and score. A model trained on speech-only data through the anti-shortcut
+    front-end has never seen leading silence and must land near 50% EER here.
+    Below the leak threshold => a non-speech shortcut survived."""
     n = cfg["eval"]["quick_n_per_class"]
     top_db = cfg["eval"]["silence_ablation"]["top_db"]
     leak_thr = cfg["eval"]["silence_ablation"]["leak_eer_threshold"]
+    sr = pcfg.sample_rate
 
     df = load_manifest(resolve(cfg, "manifests") / "asvspoof19_la_dev.csv")
     df = pd.concat(
@@ -102,9 +105,10 @@ def _run_silence_ablation(cfg, pcfg: PreprocessConfig, fp, seed, scaler, models,
     X, y = [], []
     for row in tqdm(df.itertuples(index=False), total=len(df), desc="silence-ablation"):
         try:
-            wav = preprocess_file(row.path, pcfg)
-            sil = harness.silence_only_waveform(wav, pcfg.sample_rate, top_db)
-            X.append(extract_handcrafted(sil, pcfg.sample_rate))
+            raw = load_wave(row.path, sr)
+            sil = harness.silence_only_waveform(raw, sr, top_db)
+            sil = normalize_loudness(sil, pcfg)  # match level, do NOT trim
+            X.append(extract_handcrafted(sil, sr))
             y.append(1 if row.label == "spoof" else 0)
         except Exception:
             pass
