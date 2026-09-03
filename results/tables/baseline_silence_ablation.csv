@@ -1,0 +1,5 @@
+metric,split,value_pct,n,verdict,train_set,test_set,model,seed,front_end,score_direction,git_commit,utc
+eer,silence_only,53.0,800,no leak (~chance),asvspoof19_la_train,asvspoof19_la_dev_silence_only,xgboost,42,640b0644ae,higher=bonafide,3e22516+dirty,2026-09-03T13:50:39+00:00
+eer,silence_only,50.0,800,no leak (~chance),asvspoof19_la_train,asvspoof19_la_dev_silence_only,lightgbm,42,640b0644ae,higher=bonafide,3e22516+dirty,2026-09-03T13:50:39+00:00
+eer,silence_only,58.99999999999142,800,no leak (~chance),asvspoof19_la_train,asvspoof19_la_dev_silence_only,catboost,42,640b0644ae,higher=bonafide,3e22516+dirty,2026-09-03T13:50:40+00:00
+eer,silence_only,55.249999999941465,800,no leak (~chance),asvspoof19_la_train,asvspoof19_la_dev_silence_only,ensemble,42,640b0644ae,higher=bonafide,3e22516+dirty,2026-09-03T13:50:40+00:00

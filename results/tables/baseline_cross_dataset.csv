@@ -1,0 +1,5 @@
+metric,split,value_pct,n,train_set,test_set,model,seed,front_end,score_direction,git_commit,utc
+eer,cross_dataset,63.95999999987576,5000,asvspoof19_la_train,in_the_wild,xgboost,42,640b0644ae,higher=bonafide,3e22516+dirty,2026-09-03T13:49:57+00:00
+eer,cross_dataset,72.68000000018904,5000,asvspoof19_la_train,in_the_wild,lightgbm,42,640b0644ae,higher=bonafide,3e22516+dirty,2026-09-03T13:49:58+00:00
+eer,cross_dataset,42.16000000007455,5000,asvspoof19_la_train,in_the_wild,catboost,42,640b0644ae,higher=bonafide,3e22516+dirty,2026-09-03T13:49:58+00:00
+eer,cross_dataset,58.68000000000072,5000,asvspoof19_la_train,in_the_wild,ensemble,42,640b0644ae,higher=bonafide,3e22516+dirty,2026-09-03T13:49:58+00:00
