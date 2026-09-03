@@ -1,0 +1,17 @@
+# Normalise line endings: LF in the repo, native on checkout.
+* text=auto eol=lf
+
+*.py    text eol=lf
+*.md    text eol=lf
+*.yaml  text eol=lf
+*.yml   text eol=lf
+*.toml  text eol=lf
+*.csv   text eol=lf
+*.ipynb text eol=lf
+
+*.png   binary
+*.flac  binary
+*.wav   binary
+*.pkl   binary
+*.npy   binary
+*.npz   binary

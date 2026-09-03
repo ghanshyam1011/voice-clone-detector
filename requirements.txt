@@ -1,0 +1,24 @@
+# Runtime dependencies for the baseline pipeline.
+# Preferred install:  pip install -e ".[baseline,dev]"
+# This file mirrors [project].dependencies + the "baseline" extra for
+# environments that can't do an editable install.
+#
+# Deliberately dropped from the old list: kafka-python, pyspark, nltk,
+# imbalanced-learn (SMOTE) -- this is a single-call low-latency problem,
+# not analytics, and the baseline no longer uses SMOTE.
+
+numpy==1.26.4
+pandas==2.2.2
+scipy>=1.11
+scikit-learn==1.5.1
+librosa==0.10.2
+soundfile==0.12.1
+soxr>=0.3
+pyloudnorm==0.1.1
+pyyaml>=6
+tqdm>=4.66
+
+# handcrafted baseline models
+xgboost==2.1.1
+lightgbm==4.5.0
+catboost==1.2.10

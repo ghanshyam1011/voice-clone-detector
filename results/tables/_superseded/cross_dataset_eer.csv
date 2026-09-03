@@ -1,0 +1,5 @@
+model,dataset,eer_pct,n
+XGBoost,in_the_wild,55.80000000000002,3000
+LightGBM,in_the_wild,46.93333333334655,3000
+CatBoost,in_the_wild,48.60000000004364,3000
+Ensemble,in_the_wild,49.9999999998901,3000

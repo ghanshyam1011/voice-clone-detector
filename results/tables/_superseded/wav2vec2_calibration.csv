@@ -1,0 +1,3 @@
+operating_point,bonafide_space_threshold,spoof_space_threshold_(streaming.py),dev_eer_pct,far_pct,frr_pct
+balanced_eer,0.5844423712900021,0.4155576287099979,27.15520134228191,,
+high_security,0.5844425559043884,0.4155574440956116,,0.75,84.66666666666667
