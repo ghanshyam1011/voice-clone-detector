@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voiceguard"
+version = "0.1.0"
+description = "Real-time synthetic-speech / voice-cloning detection for live calls (SIH26104)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy==1.26.4",
+    "pandas==2.2.2",
+    "scipy>=1.11",
+    "scikit-learn==1.5.1",
+    "librosa==0.10.2",
+    "soundfile==0.12.1",
+    "soxr>=0.3",
+    "pyloudnorm==0.1.1",
+    "pyyaml>=6",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+# handcrafted "Generation 1" baseline only (see baselines/README.md)
+baseline = ["xgboost==2.1.1", "lightgbm==4.5.0", "catboost==1.2.10"]
+# deep-learning branch, added in P1
+dl = ["torch==2.3.1", "torchaudio==2.3.1", "transformers==4.44.2"]
+# analysis / notebooks only, never imported by src/
+viz = ["matplotlib==3.9.2", "seaborn==0.13.2", "shap==0.46.0"]
+dev = ["pytest>=8", "ruff>=0.6", "nbstripout>=0.7", "pre-commit>=3.8"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "scripts", "tests"]
+extend-exclude = ["legacy", "notebooks", "myenv", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]

@@ -1,0 +1,49 @@
+# voiceguard -- default configuration
+# Every path is resolved against the repo root unless it is absolute.
+# Override by copying this file and passing --config, or by editing in place.
+
+seed: 42
+
+paths:
+  asvspoof_la: data/raw/LA/LA
+  in_the_wild: data/external/in_the_wild/extracted/release_in_the_wild
+  manifests: data/manifests
+  processed: data/processed
+  results: results
+  tables: results/tables
+  baselines: baselines/artifacts
+
+audio:
+  sample_rate: 16000
+  resample_type: soxr_hq
+
+  # --- anti-shortcut front-end (see docs/evaluation_protocol.md) ---
+  # Applied identically to bonafide and spoof. This is what kills the
+  # ASVspoof-2019 silence-duration leak that made the old 1.83% EER fake.
+  trim:
+    enabled: true
+    top_db: 30            # librosa.effects.trim: lower = more aggressive
+    frame_length: 2048
+    hop_length: 512
+    pad_ms: 40             # re-pad this much silence each side, both classes
+
+  loudness:
+    enabled: true
+    method: ebu_r128       # pyloudnorm integrated loudness; fallback: rms
+    target_lufs: -23.0
+    peak_ceiling_dbfs: -1.0
+
+  codec:
+    enabled: false          # eval runs clean; P1 augmentation flips this per-sample
+    # choices: g711_ulaw | g722 | amr_nb | opus_8k
+
+features:
+  handcrafted:
+    n_mfcc: 40              # 40 MFCC + rolloff + ZCR + 12 chroma + 7 contrast = 61
+
+eval:
+  quick_n_per_class: 400    # fast subset for smoke checks
+  silence_ablation:
+    top_db: 25
+    leak_eer_threshold: 0.40   # silence-only EER below this = shortcut leak
+  cross_dataset_n_per_class: 3000

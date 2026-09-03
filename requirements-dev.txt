@@ -1,0 +1,11 @@
+-r requirements.txt
+
+pytest>=8
+ruff>=0.6
+nbstripout>=0.7
+pre-commit>=3.8
+
+# analysis / notebooks
+matplotlib==3.9.2
+seaborn==0.13.2
+shap==0.46.0
