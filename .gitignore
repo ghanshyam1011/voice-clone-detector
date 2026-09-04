@@ -51,7 +51,8 @@ data/processed/
 *.npz
 *.safetensors
 *.bin
-models/
+/models/                 # repo-root weights dir -- NOT src/voiceguard/models/
+!/models/**/MODEL_CARD.md
 baselines/artifacts/
 results/**/*.pkl
 results/wav2vec2_finetuned/

@@ -87,9 +87,7 @@ def build_asvspoof_la(
     return written
 
 
-def build_in_the_wild(
-    itw_root: str | Path, out_dir: str | Path, *, root: Path = REPO_ROOT
-) -> Path:
+def build_in_the_wild(itw_root: str | Path, out_dir: str | Path, *, root: Path = REPO_ROOT) -> Path:
     """Write ``in_the_wild_eval.csv``. In-the-Wild is evaluation-only; it
     never carries a train/dev split and must never be trained on."""
     itw_root, out_dir = Path(itw_root), Path(out_dir)

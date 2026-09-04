@@ -4,15 +4,14 @@ Real-time detection of synthetic / cloned speech in live calls.
 Origin: Smart India Hackathon 2026 (AICTE Cyber Security Cell). Target: a
 deployable voice-integrity layer, not a demo.
 
-Full plan and roadmap: the rebuild plan (P0–P7). This repo is currently at **P0 —
-foundations & trustworthy measurement**.
+Full plan and roadmap: the rebuild plan (P0–P7).
 
 ## Status
 
 | Phase | State |
 |---|---|
 | P0 foundations + fix the silence leak + re-measure | **done** (full-corpus re-run pending on mains power) |
-| P1 a detector that generalises (RawNet2 / AASIST / SSL-AASIST + augmentation) | next |
+| P1 a detector that generalises | **in progress** — RawNet2 / AASIST / AASIST-L + RawBoost/codec wired; SSL-AASIST next |
 | P2 real streaming (VAD, sliding window, EMA, latency budget) | not started |
 | P3 speaker verification + prosody branch + calibrated fusion | not started |
 | P4 prevention / policy engine | not started |

@@ -36,7 +36,7 @@ where = ["src"]
 [tool.ruff]
 line-length = 100
 src = ["src", "scripts", "tests"]
-extend-exclude = ["legacy", "notebooks", "myenv", ".venv"]
+extend-exclude = ["legacy", "notebooks", "myenv", ".venv", "src/voiceguard/models/_vendor"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
