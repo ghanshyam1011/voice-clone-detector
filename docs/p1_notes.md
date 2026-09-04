@@ -13,6 +13,7 @@ language always held out of training (docs/evaluation_protocol.md).
 | RawNet2 | `voiceguard.models.neural` | vendored `clovaai/aasist` RawNet2Spoof (17.6M) — Tier-1 streaming candidate |
 | AASIST | `voiceguard.models.neural` | vendored `clovaai/aasist` (0.30M) — the field reference backend |
 | AASIST-L | `voiceguard.models.neural` | 0.085M — lightweight variant, another Tier-1 candidate |
+| SSL-AASIST | `voiceguard.models.ssl_aasist` | HF wav2vec2-base (frozen, 94M) + AASIST backend (0.41M trainable) + learnable layer-weight sum. XLS-R via `ssl_name=`. This is the model that reaches <15% ITW. Forward + frozen-backbone verified. |
 | torch Dataset | `voiceguard.data.torch_dataset` | load → front-end → augment (train only) → tile-pad/crop to 64600 |
 | Train loop | `scripts/train_cm.py` | Adam + cosine, AMP, class-weighted CE, per-epoch dev EER, best-checkpoint |
 | Eval | `scripts/eval_cm.py` | dev/eval/per-attack + In-the-Wild + silence ablation, provenance-stamped |
@@ -22,12 +23,14 @@ logit columns so **column 0 = bonafide** everywhere in this repo.
 
 ## Not yet done
 
-- **SSL-AASIST** (wav2vec2 / XLS-R frozen front-end + AASIST backend) — this
-  is the model that actually reaches <15% In-the-Wild. Needs an SSL feature
-  cache (frozen backbone) + an AASIST variant that consumes `(B, T, D)`
-  features instead of raw audio. Next.
+- **Actual training runs.** All four models are wired but only smoke-trained.
+  Need: train AASIST + AASIST-L + RawNet2 (end-to-end, 6 GB) and SSL-AASIST
+  (frozen backbone), full ASVspoof19 LA, ~30–40 epochs, with augmentation.
+- SSL feature cache — right now `SSLFrontend` runs wav2vec2 every step under
+  `no_grad`; caching the frame features to disk once would ~10x SSL-AASIST
+  training throughput. Worth it before the real runs.
 - MUSAN additive noise + RIR reverb augmentation (needs the MUSAN download).
-- The ablation grid (aug on/off, frozen vs fine-tune, front-end choice).
+- The ablation grid (aug on/off, frozen vs partial fine-tune, wav2vec2 vs XLS-R).
 - min t-DCF alongside EER.
 
 ## Compute

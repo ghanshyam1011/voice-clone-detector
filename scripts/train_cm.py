@@ -49,12 +49,21 @@ def dev_eer(model, loader, device) -> float:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model", default="aasist", choices=["rawnet2", "aasist", "aasist-l"])
+    ap.add_argument(
+        "--model", default="aasist", choices=["rawnet2", "aasist", "aasist-l", "ssl-aasist"]
+    )
     ap.add_argument("--epochs", type=int, default=30)
     ap.add_argument("--batch-size", type=int, default=16)
     ap.add_argument("--lr", type=float, default=1e-4)
     ap.add_argument("--limit-per-class", type=int, default=None)
     ap.add_argument("--no-augment", action="store_true")
+    ap.add_argument(
+        "--codec-prob",
+        type=float,
+        default=None,
+        help="override AugmentConfig.codec_prob (ffmpeg is the slow part)",
+    )
+    ap.add_argument("--rawboost-prob", type=float, default=None)
     ap.add_argument("--workers", type=int, default=2)
     args = ap.parse_args()
 
@@ -75,7 +84,12 @@ def main() -> None:
     )
     dev_df = _subsample(load_manifest(man / "asvspoof19_la_dev.csv"), args.limit_per_class, seed)
 
-    aug = AugmentConfig(enabled=not args.no_augment)
+    aug_kw = {"enabled": not args.no_augment}
+    if args.codec_prob is not None:
+        aug_kw["codec_prob"] = args.codec_prob
+    if args.rawboost_prob is not None:
+        aug_kw["rawboost_prob"] = args.rawboost_prob
+    aug = AugmentConfig(**aug_kw)
     train_ds = CMDataset(train_df, pcfg, aug, train=True, seed=seed)
     dev_ds = CMDataset(dev_df, pcfg, None, train=False, seed=seed)
     train_ld = DataLoader(
@@ -89,8 +103,10 @@ def main() -> None:
     dev_ld = DataLoader(dev_ds, batch_size=args.batch_size, num_workers=args.workers)
 
     model = build_cm(args.model).to(device)
+    trainable = [p for p in model.parameters() if p.requires_grad]
     print(
-        f"{args.model}: {model.param_count() / 1e6:.2f}M params | device {device} | "
+        f"{args.model}: {model.param_count() / 1e6:.2f}M params "
+        f"({model.param_count(trainable_only=True) / 1e6:.2f}M trainable) | device {device} | "
         f"train {len(train_ds)} dev {len(dev_ds)} | augment {aug.enabled}"
     )
 
@@ -100,7 +116,7 @@ def main() -> None:
     w = torch.tensor([n_spoof / max(n_bona, 1), 1.0], dtype=torch.float32, device=device)
     criterion = torch.nn.CrossEntropyLoss(weight=w)
 
-    opt = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-4)
+    opt = torch.optim.Adam(trainable, lr=args.lr, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=args.epochs, eta_min=5e-6)
     scaler = torch.cuda.amp.GradScaler(enabled=(device.type == "cuda"))
 

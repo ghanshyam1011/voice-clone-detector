@@ -35,3 +35,34 @@ def test_param_counts_in_expected_range():
 def test_unknown_model_raises():
     with pytest.raises(ValueError):
         build_cm("nope")
+
+
+def _wav2vec2_base_cached() -> bool:
+    from pathlib import Path
+
+    hub = Path.home() / ".cache" / "huggingface" / "hub"
+    return (hub / "models--facebook--wav2vec2-base").exists()
+
+
+@pytest.mark.skipif(not _wav2vec2_base_cached(), reason="facebook/wav2vec2-base not in HF cache")
+def test_ssl_aasist_frozen_backbone_and_forward():
+    import os
+
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    model = build_cm("ssl-aasist").eval()
+    # ~94M total, only the AASIST backend (<1M) trainable
+    assert model.param_count() > 90_000_000
+    assert model.param_count(trainable_only=True) < 2_000_000
+
+    x = torch.randn(2, NB_SAMP)
+    assert model(x).shape == (2, 2)
+
+    model.train()
+    torch.nn.functional.cross_entropy(model(x), torch.tensor([0, 1])).backward()
+    backbone_grad = sum(
+        p.grad.abs().sum().item()
+        for n, p in model.named_parameters()
+        if "ssl.model" in n and p.grad is not None
+    )
+    assert backbone_grad == 0.0  # backbone stays frozen
+    assert model.backbone.LL.weight.grad is not None  # backend trains
