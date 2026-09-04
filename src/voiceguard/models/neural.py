@@ -61,11 +61,17 @@ class NeuralCM(nn.Module):
     def score_bonafide(self, x: torch.Tensor) -> torch.Tensor:
         return torch.softmax(self.forward(x), dim=-1)[:, 0]
 
-    def param_count(self) -> int:
-        return sum(p.numel() for p in self.parameters())
+    def param_count(self, trainable_only: bool = False) -> int:
+        ps = self.parameters()
+        if trainable_only:
+            ps = (p for p in ps if p.requires_grad)
+        return sum(p.numel() for p in ps)
 
 
-def build_cm(name: str) -> NeuralCM:
+CM_NAMES = ("rawnet2", "aasist", "aasist-l", "ssl-aasist")
+
+
+def build_cm(name: str, **kw) -> NeuralCM:
     name = name.lower()
     # both reference Model.__init__ mutate their config dict in place -> deep-copy
     if name == "rawnet2":
@@ -74,6 +80,10 @@ def build_cm(name: str) -> NeuralCM:
         backbone = aasist_ref.Model(_load_conf("AASIST.conf"))
     elif name in ("aasist-l", "aasist_l"):
         backbone = aasist_ref.Model(_load_conf("AASIST-L.conf"))
+    elif name in ("ssl-aasist", "ssl_aasist"):
+        from voiceguard.models.ssl_aasist import SSLAASIST
+
+        backbone = SSLAASIST(**kw)
     else:
-        raise ValueError(f"unknown CM {name!r}; have: rawnet2, aasist, aasist-l")
+        raise ValueError(f"unknown CM {name!r}; have: {', '.join(CM_NAMES)}")
     return NeuralCM(backbone, name)

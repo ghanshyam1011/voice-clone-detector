@@ -68,7 +68,9 @@ def _silence_ablation(model, cfg, pcfg, device, seed, n, top_db):
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model", default="aasist", choices=["rawnet2", "aasist", "aasist-l"])
+    ap.add_argument(
+        "--model", default="aasist", choices=["rawnet2", "aasist", "aasist-l", "ssl-aasist"]
+    )
     ap.add_argument("--ckpt", default=None)
     ap.add_argument("--limit-per-class", type=int, default=None)
     ap.add_argument("--batch-size", type=int, default=16)
