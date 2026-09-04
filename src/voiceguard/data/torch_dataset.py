@@ -1,11 +1,13 @@
 """torch Dataset for training raw-waveform countermeasures.
 
 Pipeline per item:  load -> anti-shortcut front-end (trim + loudness) ->
-[augment, train only] -> fix to nb_samp (tile-pad short, random/again crop
-long, matching the AASIST reference) -> (waveform, label).
+[augment, train only] -> fix to nb_samp (tile-pad short, random crop long,
+matching the AASIST reference) -> (waveform, label).
 
 label: 0 = bonafide, 1 = spoof  (repo convention).
-Augmentation, when on, is applied the SAME way to both classes.
+Augmentation, when on, is applied the SAME way to both classes, and varies
+every epoch (fresh entropy). Eval is deterministic (no augmentation, no
+random crop).
 """
 
 from __future__ import annotations
@@ -55,15 +57,17 @@ class CMDataset(Dataset):
 
     def __getitem__(self, idx: int):
         row = self.rows.iloc[idx]
-        # per-item deterministic RNG: same clip -> same augmentation across runs
-        rng = np.random.default_rng(self.seed * 1_000_003 + idx)
+        do_aug = self.train and self.augment is not None and self.augment.enabled
+
+        if do_aug:
+            rng = np.random.default_rng()  # fresh entropy -> new augmentation each epoch
+            np.random.seed()  # RawBoost reference uses numpy's global RNG
+        else:
+            rng = np.random.default_rng(self.seed * 1_000_003 + idx)  # reproducible eval
 
         y = load_wave(row["path"], self.pcfg.sample_rate)
         y = preprocess_wave(y, self.pcfg)
-
-        if self.train and self.augment is not None and self.augment.enabled:
-            # seed numpy's global RNG too -- RawBoost ref uses it
-            np.random.seed((self.seed * 2_654_435_761 + idx) % (2**32))
+        if do_aug:
             y = augment_waveform(y, self.pcfg.sample_rate, self.augment, rng)
 
         y = _fix_length(y, self.nb_samp, rng, random_crop=self.train)
