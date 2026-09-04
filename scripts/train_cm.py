@@ -58,6 +58,12 @@ def main() -> None:
     ap.add_argument("--limit-per-class", type=int, default=None)
     ap.add_argument("--no-augment", action="store_true")
     ap.add_argument(
+        "--dev-eval-per-class",
+        type=int,
+        default=3000,
+        help="subsample dev for the per-epoch EER check (full dev is slow); 0 = full",
+    )
+    ap.add_argument(
         "--codec-prob",
         type=float,
         default=None,
@@ -83,6 +89,7 @@ def main() -> None:
         load_manifest(man / "asvspoof19_la_train.csv"), args.limit_per_class, seed
     )
     dev_df = _subsample(load_manifest(man / "asvspoof19_la_dev.csv"), args.limit_per_class, seed)
+    dev_eval_df = _subsample(dev_df, args.dev_eval_per_class or None, seed)
 
     aug_kw = {"enabled": not args.no_augment}
     if args.codec_prob is not None:
@@ -91,7 +98,7 @@ def main() -> None:
         aug_kw["rawboost_prob"] = args.rawboost_prob
     aug = AugmentConfig(**aug_kw)
     train_ds = CMDataset(train_df, pcfg, aug, train=True, seed=seed)
-    dev_ds = CMDataset(dev_df, pcfg, None, train=False, seed=seed)
+    dev_ds = CMDataset(dev_eval_df, pcfg, None, train=False, seed=seed)
     train_ld = DataLoader(
         train_ds,
         batch_size=args.batch_size,
@@ -107,7 +114,7 @@ def main() -> None:
     print(
         f"{args.model}: {model.param_count() / 1e6:.2f}M params "
         f"({model.param_count(trainable_only=True) / 1e6:.2f}M trainable) | device {device} | "
-        f"train {len(train_ds)} dev {len(dev_ds)} | augment {aug.enabled}"
+        f"train {len(train_ds)} dev {len(dev_ds)}/epoch | augment {aug.enabled}"
     )
 
     # bonafide (col 0) is the minority -> up-weight it
