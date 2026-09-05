@@ -7,7 +7,13 @@ same protocol as the baseline (docs/evaluation_protocol.md).
 -> results/tables/cm_<name>_{in_domain,cross_dataset,silence_ablation}.csv
 """
 
+# ruff: noqa: E402  (thread-limit env vars must be set before numpy/torch import)
 from __future__ import annotations
+
+import os
+
+for _v in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
+    os.environ.setdefault(_v, "2")
 
 import argparse
 
