@@ -90,7 +90,20 @@ def main() -> None:
         help="override AugmentConfig.codec_prob (ffmpeg is the slow part)",
     )
     ap.add_argument("--rawboost-prob", type=float, default=None)
-    ap.add_argument("--workers", type=int, default=2)
+    ap.add_argument(
+        "--workers",
+        type=int,
+        default=0,
+        help="DataLoader workers. 0 is often FASTER on Windows -- multiprocessing "
+        "IPC + per-worker library init can cost more than it saves here.",
+    )
+    ap.add_argument(
+        "--train-per-class",
+        type=int,
+        default=None,
+        help="cap training clips per class (deterministic subset). Speeds up epochs; "
+        "use for a first run, then rerun --fresh on the full set.",
+    )
     args = ap.parse_args()
 
     cfg = load_config()
@@ -107,7 +120,9 @@ def main() -> None:
 
     man = resolve(cfg, "manifests")
     train_df = _subsample(
-        load_manifest(man / "asvspoof19_la_train.csv"), args.limit_per_class, seed
+        load_manifest(man / "asvspoof19_la_train.csv"),
+        args.train_per_class or args.limit_per_class,
+        seed,
     )
     dev_df = _subsample(load_manifest(man / "asvspoof19_la_dev.csv"), args.limit_per_class, seed)
     dev_eval_df = _subsample(dev_df, args.dev_eval_per_class or None, seed)
