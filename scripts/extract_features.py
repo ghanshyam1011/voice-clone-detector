@@ -16,7 +16,16 @@ unless --force.
     python scripts/extract_features.py --manifest asvspoof19_la_eval --force
 """
 
+# ruff: noqa: E402  (thread-limit env vars must be set before numpy/librosa import)
 from __future__ import annotations
+
+import os
+
+# Set before numpy/librosa import: a single process otherwise spins up an
+# all-core BLAS thread pool per call, which oversubscribes badly when this
+# runs alongside anything else CPU-heavy (e.g. scripts/train_cm.py).
+for _v in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXPR_NUM_THREADS"):
+    os.environ.setdefault(_v, "4")
 
 import argparse
 import time
