@@ -53,6 +53,9 @@ data/processed/
 *.bin
 /models/                 # repo-root weights dir -- NOT src/voiceguard/models/
 !/models/**/MODEL_CARD.md
+# ...but DO track the small fixed upstream reference weights (clovaai/aasist)
+!/models/pretrained/
+!/models/pretrained/*.pth
 baselines/artifacts/
 results/**/*.pkl
 results/wav2vec2_finetuned/

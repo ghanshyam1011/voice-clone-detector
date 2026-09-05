@@ -78,9 +78,15 @@ def main() -> None:
         "--model", default="aasist", choices=["rawnet2", "aasist", "aasist-l", "ssl-aasist"]
     )
     ap.add_argument("--ckpt", default=None)
+    ap.add_argument(
+        "--pretrained",
+        action="store_true",
+        help="load the upstream weights from models/pretrained/<MODEL>.pth "
+        "(clovaai/aasist) instead of our own trained checkpoint",
+    )
     ap.add_argument("--limit-per-class", type=int, default=None)
     ap.add_argument("--batch-size", type=int, default=16)
-    ap.add_argument("--workers", type=int, default=2)
+    ap.add_argument("--workers", type=int, default=0)
     args = ap.parse_args()
 
     cfg = load_config()
@@ -90,13 +96,27 @@ def main() -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     tables = resolve(cfg, "tables")
 
-    ckpt = args.ckpt or (resolve(cfg, "results").parent / "models" / "cm" / args.model / "best.pt")
-    state = torch.load(ckpt, map_location=device)
     model = build_cm(args.model).to(device)
-    model.load_state_dict(state["model"])
+    if args.pretrained:
+        name_map = {"aasist": "AASIST.pth", "aasist-l": "AASIST-L.pth"}
+        if args.model not in name_map:
+            raise SystemExit(f"--pretrained not available for {args.model}")
+        wpath = resolve(cfg, "results").parent / "models" / "pretrained" / name_map[args.model]
+        # upstream checkpoint is a raw state_dict for aasist_ref.Model -> load into .backbone
+        model.backbone.load_state_dict(torch.load(wpath, map_location=device))
+        source, tag = str(wpath), "pretrained-upstream"
+    else:
+        ckpt = args.ckpt or (
+            resolve(cfg, "results").parent / "models" / "cm" / args.model / "best.pt"
+        )
+        state = torch.load(ckpt, map_location=device)
+        model.load_state_dict(state["model"])
+        source = str(ckpt)
+        eer = state.get("dev_eer", float("nan")) * 100
+        tag = f"ours epoch {state.get('epoch', '?')} devEER {eer:.2f}%"
     model.eval()
-    saved_eer = state.get("dev_eer", float("nan")) * 100
-    print(f"{args.model} loaded from {ckpt} (dev EER at save {saved_eer:.2f}%)")
+    run = f"{args.model}-pretrained" if args.pretrained else args.model
+    print(f"{run} <- {source}  ({tag})")
 
     man = resolve(cfg, "manifests")
     dev_df = _subsample(load_manifest(man / "asvspoof19_la_dev.csv"), args.limit_per_class, seed)
@@ -104,20 +124,16 @@ def main() -> None:
 
     ld, sd, _ = _score(model, dev_df, pcfg, device, args.batch_size, args.workers)
     le, se, atk = _score(model, eval_df, pcfg, device, args.batch_size, args.workers)
-    rows = harness.in_domain_rows(args.model, (ld, sd), (le, se), atk, seed=seed, front_end=fp)
-    pd.DataFrame(rows).to_csv(tables / f"cm_{args.model}_in_domain.csv", index=False)
+    rows = harness.in_domain_rows(run, (ld, sd), (le, se), atk, seed=seed, front_end=fp)
+    pd.DataFrame(rows).to_csv(tables / f"cm_{run}_in_domain.csv", index=False)
 
     itw = man / "in_the_wild_eval.csv"
     if itw.exists():
         w_df = _subsample(load_manifest(itw), args.limit_per_class or 3000, seed)
         lw, sw, _ = _score(model, w_df, pcfg, device, args.batch_size, args.workers)
         pd.DataFrame(
-            [
-                harness.cross_dataset_row(
-                    args.model, lw, sw, dataset="in_the_wild", seed=seed, front_end=fp
-                )
-            ]
-        ).to_csv(tables / f"cm_{args.model}_cross_dataset.csv", index=False)
+            [harness.cross_dataset_row(run, lw, sw, dataset="in_the_wild", seed=seed, front_end=fp)]
+        ).to_csv(tables / f"cm_{run}_cross_dataset.csv", index=False)
 
     sl, ss = _silence_ablation(
         model,
@@ -131,7 +147,7 @@ def main() -> None:
     pd.DataFrame(
         [
             harness.silence_ablation_row(
-                args.model,
+                run,
                 sl,
                 ss,
                 seed=seed,
@@ -139,12 +155,24 @@ def main() -> None:
                 leak_threshold=cfg["eval"]["silence_ablation"]["leak_eer_threshold"],
             )
         ]
-    ).to_csv(tables / f"cm_{args.model}_silence_ablation.csv", index=False)
+    ).to_csv(tables / f"cm_{run}_silence_ablation.csv", index=False)
 
-    d = pd.read_csv(tables / f"cm_{args.model}_in_domain.csv")
+    d = pd.read_csv(tables / f"cm_{run}_in_domain.csv")
     print(
-        d[d.split.isin(["dev_known_attacks", "eval_unknown_attacks"])][
+        "\n"
+        + d[d.split.isin(["dev_known_attacks", "eval_unknown_attacks"])][
             ["model", "split", "value_pct"]
+        ].to_string(index=False)
+    )
+    if (tables / f"cm_{run}_cross_dataset.csv").exists():
+        print(
+            pd.read_csv(tables / f"cm_{run}_cross_dataset.csv")[
+                ["model", "split", "value_pct"]
+            ].to_string(index=False)
+        )
+    print(
+        pd.read_csv(tables / f"cm_{run}_silence_ablation.csv")[
+            ["model", "value_pct", "verdict"]
         ].to_string(index=False)
     )
 
