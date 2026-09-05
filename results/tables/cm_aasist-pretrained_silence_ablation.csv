@@ -1,0 +1,2 @@
+metric,split,value_pct,n,verdict,train_set,test_set,model,seed,front_end,score_direction,git_commit,utc
+eer,silence_only,41.25000000000567,800,no leak (~chance),asvspoof19_la_train,asvspoof19_la_dev_silence_only,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:55:57+00:00

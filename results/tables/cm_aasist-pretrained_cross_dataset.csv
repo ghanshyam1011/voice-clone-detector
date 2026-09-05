@@ -1,0 +1,2 @@
+metric,split,value_pct,n,train_set,test_set,model,seed,front_end,score_direction,git_commit,utc
+eer,cross_dataset,35.80000000000349,12000,asvspoof19_la_train,in_the_wild,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:55:02+00:00

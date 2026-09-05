@@ -1,0 +1,16 @@
+metric,split,value_pct,n,train_set,test_set,model,seed,front_end,score_direction,git_commit,utc
+eer,dev_known_attacks,9.615384615384615,8548.0,asvspoof19_la_train,asvspoof19_la_dev,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:44:26+00:00
+eer,eval_unknown_attacks,23.33333333340713,12000.0,asvspoof19_la_train,asvspoof19_la_eval,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:44:26+00:00
+eer,eval_attack_A07,40.01666666664366,,asvspoof19_la_train,asvspoof19_la_eval,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:44:27+00:00
+eer,eval_attack_A08,1.573033707877345,,asvspoof19_la_train,asvspoof19_la_eval,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:44:27+00:00
+eer,eval_attack_A09,0.6666666666666714,,asvspoof19_la_train,asvspoof19_la_eval,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:44:27+00:00
+eer,eval_attack_A10,52.05183585325285,,asvspoof19_la_train,asvspoof19_la_eval,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:44:27+00:00
+eer,eval_attack_A11,17.03539823008388,,asvspoof19_la_train,asvspoof19_la_eval,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:44:28+00:00
+eer,eval_attack_A12,43.68530020698947,,asvspoof19_la_train,asvspoof19_la_eval,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:44:28+00:00
+eer,eval_attack_A13,17.68333333333335,,asvspoof19_la_train,asvspoof19_la_eval,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:44:28+00:00
+eer,eval_attack_A14,8.016666666666673,,asvspoof19_la_train,asvspoof19_la_eval,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:44:28+00:00
+eer,eval_attack_A15,38.99999999997903,,asvspoof19_la_train,asvspoof19_la_eval,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:44:29+00:00
+eer,eval_attack_A16,13.650000000032383,,asvspoof19_la_train,asvspoof19_la_eval,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:44:29+00:00
+eer,eval_attack_A17,13.683333333333337,,asvspoof19_la_train,asvspoof19_la_eval,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:44:29+00:00
+eer,eval_attack_A18,12.399999999979611,,asvspoof19_la_train,asvspoof19_la_eval,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:44:29+00:00
+eer,eval_attack_A19,13.400000000000004,,asvspoof19_la_train,asvspoof19_la_eval,aasist-pretrained,42,640b0644ae,higher=bonafide,a41130e,2026-09-05T17:44:29+00:00
