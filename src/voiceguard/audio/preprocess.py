@@ -18,10 +18,17 @@ from __future__ import annotations
 
 import hashlib
 import json
+import warnings
 from dataclasses import asdict, dataclass
 
 import librosa
 import numpy as np
+
+# pyloudnorm.normalize.loudness warns "Possible clipped samples" whenever it
+# boosts a quiet clip past 0 dBFS -- expected here, since _apply_peak_ceiling
+# clamps it right after. Silence it once (module-level, zero per-call cost)
+# rather than eat a stderr write per clip in the training hot path.
+warnings.filterwarnings("ignore", message=".*clipped samples.*")
 
 try:
     import pyloudnorm as _pyln
