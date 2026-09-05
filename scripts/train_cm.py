@@ -80,8 +80,9 @@ def main() -> None:
     ap.add_argument(
         "--dev-eval-per-class",
         type=int,
-        default=3000,
-        help="subsample dev for the per-epoch EER check (full dev is slow); 0 = full",
+        default=1200,
+        help="subsample dev for the per-epoch EER check (full dev is slow); 0 = full. "
+        "eval_cm.py runs full dev/eval at the end regardless.",
     )
     ap.add_argument(
         "--codec-prob",
