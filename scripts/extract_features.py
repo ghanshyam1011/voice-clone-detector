@@ -19,6 +19,7 @@ unless --force.
 from __future__ import annotations
 
 import argparse
+import time
 
 import numpy as np
 import pandas as pd
@@ -46,6 +47,22 @@ def _subsample(df, limit_per_class, seed):
         g.sample(min(limit_per_class, len(g)), random_state=seed) for _, g in df.groupby("label")
     ]
     return pd.concat(parts).reset_index(drop=True)
+
+
+def _unlink_retry(path, attempts: int = 5, delay: float = 0.5) -> None:
+    """Windows (antivirus / search indexer / a lingering handle) can hold a
+    just-written file briefly. The checkpoint is harmless if it survives --
+    `extract_one` skips straight to `final.exists()` next run -- so retry a
+    few times and give up quietly rather than crashing a finished extraction."""
+    for i in range(attempts):
+        try:
+            path.unlink(missing_ok=True)
+            return
+        except PermissionError:
+            if i == attempts - 1:
+                print(f"  (leaving stale checkpoint, still locked: {path})")
+                return
+            time.sleep(delay)
 
 
 def _save(path, X, y, attack, speaker, fp, n_done):
@@ -101,7 +118,7 @@ def extract_one(name: str, cfg: dict, limit_per_class: int | None, force: bool) 
             _save(ckpt, X, y, attack, speaker, fp, i + 1)
 
     _save(final, X, y, attack, speaker, fp, len(rows))
-    ckpt.unlink(missing_ok=True)
+    _unlink_retry(ckpt)
     print(f"  {name}: {len(X)} rows, {failed} failed -> {final}")
 
 
