@@ -5,6 +5,6 @@ exponential-moving-average risk timeline. VAD, latency budgets and the
 two-tier design come later.
 """
 
-from voiceguard.detect.scorer import CMScorer, Verdict, build_scorer
+from voiceguard.detect.scorer import NB_SAMP, CMScorer, Verdict, build_scorer
 
-__all__ = ["CMScorer", "Verdict", "build_scorer"]
+__all__ = ["CMScorer", "Verdict", "build_scorer", "NB_SAMP"]
