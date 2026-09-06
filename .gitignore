@@ -51,12 +51,15 @@ data/processed/
 *.npz
 *.safetensors
 *.bin
-/models/                 # repo-root weights dir -- NOT src/voiceguard/models/
+# repo-root weights dir (NOT src/voiceguard/models/) -- gitignore forbids
+# trailing comments on pattern lines, so keep these bare
+/models/
 !/models/**/MODEL_CARD.md
 # ...but DO track the small fixed upstream reference weights (clovaai/aasist)
 !/models/pretrained/
 !/models/pretrained/*.pth
-/models/pretrained/*_demo_calib.json  # per-machine, regenerates on first demo run
+# ...except the per-machine calibration json (regenerates on first demo run)
+/models/pretrained/*_demo_calib.json
 baselines/artifacts/
 results/**/*.pkl
 results/wav2vec2_finetuned/
