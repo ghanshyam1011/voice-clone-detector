@@ -29,6 +29,7 @@ data/interim/
 data/external/
 data/processed/
 data/modern_spoof/
+data/indic_eval/
 demo_audio/
 # ...but keep the manifests -- they are the source of truth and tiny
 !data/manifests/

@@ -33,6 +33,8 @@ viz = ["matplotlib==3.9.2", "seaborn==0.13.2", "shap==0.46.0"]
 serve = ["fastapi>=0.110", "uvicorn>=0.29", "websockets>=12", "python-multipart>=0.0.9"]
 # prosody / behaviour branch (scripts/train_prosody.py, voiceguard.prosody)
 prosody = ["praat-parselmouth>=0.4", "joblib>=1.3"]
+# synthetic-data generation for fine-tuning + IndicCall-Eval (research scripts only)
+research = ["sentencepiece>=0.2", "datasets>=2.14"]
 dev = ["pytest>=8", "ruff==0.16.5", "nbstripout==0.9.1", "pre-commit>=3.8"]
 
 [tool.setuptools.packages.find]

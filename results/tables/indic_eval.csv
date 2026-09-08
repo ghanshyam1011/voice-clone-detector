@@ -1,0 +1,6 @@
+metric,split,value_pct,n,eer_pct,train_set,test_set,model,seed,front_end,score_direction,git_commit,utc
+synthetic_recall,indic_ben,37.5,40,,asvspoof19_la_train,indic_eval_ben,AASIST-upstream,42,640b0644ae,higher=bonafide,54ae50b+dirty,2026-09-08T06:49:01+00:00
+synthetic_recall,indic_eng,7.5,40,,asvspoof19_la_train,indic_eval_eng,AASIST-upstream,42,640b0644ae,higher=bonafide,54ae50b+dirty,2026-09-08T06:49:10+00:00
+synthetic_recall,indic_hin,57.49999999999999,40,,asvspoof19_la_train,indic_eval_hin,AASIST-upstream,42,640b0644ae,higher=bonafide,54ae50b+dirty,2026-09-08T06:49:20+00:00
+synthetic_recall,indic_mar,85.0,40,,asvspoof19_la_train,indic_eval_mar,AASIST-upstream,42,640b0644ae,higher=bonafide,54ae50b+dirty,2026-09-08T06:49:28+00:00
+synthetic_recall,indic_tam,55.00000000000001,40,,asvspoof19_la_train,indic_eval_tam,AASIST-upstream,42,640b0644ae,higher=bonafide,54ae50b+dirty,2026-09-08T06:49:36+00:00

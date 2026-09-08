@@ -16,7 +16,7 @@ Full plan and roadmap: the rebuild plan (P0–P7).
 | P3 speaker verification + prosody branch + calibrated fusion | partial — WavLM speaker check + Praat prosody branch (26.3% EER) + rule-based fusion done; real calibration next |
 | P4 prevention / policy engine | partial — scenario thresholds + reason codes + ALLOW/VERIFY/ESCALATE + simulated alert & acknowledge |
 | P5 privacy (feature-only logging, edge) + REST/gRPC + SDK | partial — feature-only audit log + REST session API + headless client; no gRPC / edge |
-| P6 multilingual / Indic evaluation set | not started |
+| P6 multilingual / Indic evaluation set | partial — `scripts/make_indic_spoof.py` + `eval_indic.py`, 5-language MMS-TTS attacks, per-language recall/EER; real-speech pilot slice pending (`docs/indic_eval.md`) |
 | P7 hardening, model card, release | not started |
 
 For the SIH demo build (2–3 day vertical slice), see

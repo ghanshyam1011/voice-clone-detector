@@ -46,7 +46,7 @@ Every item below is an explicit SIH26104 deliverable with **zero code** today.
 |---|---|---|---|
 | c | **A trained model** — one Kaggle run (AASIST or SSL-AASIST) to replace the upstream weights with ours; target < 15 % In-the-Wild EER | 1 — required | training days + wiring |
 | d | **gRPC audio stream + Python SDK** (REST + `examples/rest_client.py` exist) | 5 — required | 2 days |
-| e | **Indian-language evaluation** — small consented IndicCall-Eval pilot (Hindi/Marathi/Tamil/Bengali), per-language slices | 5 — required | 2–3 days (data collection dominates) |
+| e | **Indian-language evaluation** — pipeline built (`scripts/make_indic_spoof.py` + `eval_indic.py`, 5 languages of MMS-TTS attacks, per-language recall/EER, `docs/indic_eval.md`). **Remaining:** the consented real-speech slice — team records it | 5 — required | ~1 day (team recordings) |
 | f | **Real calibration** — replace the logit-shift + tuned speaker/prosody/context operating points with calibration on held-out data | supports 2 | 0.5–1 day |
 | g | **Real alert delivery** — the console panel is simulated; wire an actual SMS/email/webhook sink | 3 — required | ~1 day |
 | h | **min t-DCF** alongside EER; ASVspoof 2021 DF as a second eval set | supports evidence | 0.5 day |
@@ -94,11 +94,9 @@ speaker-consistency and prosody contributions, recommends verification before a
 mock transfer, writes a feature-only audit event, and exposes the same session
 over REST — all with measured metrics and stated limits.
 
-**Met now:** benign vs synthetic/replay separation, speaker-consistency **and prosody**
-contributions, verification recommendation before a mock transfer, an alert the agent
-acknowledges, feature-only audit event, same session over REST. **Not met:** stable
-read within 2 s (4 s window); "measured metrics" for the fused decision (spoof EER
-33.9 %/35.8 %, prosody EER 26.3 % are measured; speaker/context/fusion weights are
-operating points, not calibrated).
-
-Today: ~1 of those 7 clauses is met.
+**Met now (6 of 7 clauses):** benign vs synthetic/replay separation, speaker-consistency
+**and prosody** contributions, verification recommendation before a mock transfer, an
+alert the agent acknowledges, feature-only audit event, same session over REST.
+**Not met:** stable read within 2 s (the window is 4 s); and "measured metrics" only
+partly — spoof EER 33.9 %/35.8 % and prosody EER 26.3 % are measured, but the
+speaker / context / fusion weights are operating points, not calibrated.

@@ -69,6 +69,11 @@ class ProsodyScorer:
         x = self._impute(np.asarray(feats, dtype=np.float32)).reshape(1, -1)
         return float(self._pipe.predict_proba(x)[0, 1])  # column 1 = spoof
 
+    def score_file(self, path, sr: int = 16000) -> ProsodyResult:
+        from voiceguard.audio import load_wave
+
+        return self.score(load_wave(path, sr), sr)
+
     def score(self, wave: np.ndarray, sr: int = 16000) -> ProsodyResult:
         feats = prosody_features(wave, sr)
         n_ok = int(np.isfinite(feats).sum())
