@@ -28,6 +28,11 @@ baseline = ["xgboost==2.1.1", "lightgbm==4.5.0", "catboost==1.2.10"]
 dl = ["torch==2.3.1", "torchaudio==2.3.1", "transformers==4.44.2"]
 # analysis / notebooks only, never imported by src/
 viz = ["matplotlib==3.9.2", "seaborn==0.13.2", "shap==0.46.0"]
+# local demo web UI + operator console (scripts/serve_demo.py); needs [dl] too
+# (torch for the scorer, transformers for the WavLM speaker model)
+serve = ["fastapi>=0.110", "uvicorn>=0.29", "websockets>=12", "python-multipart>=0.0.9"]
+# prosody / behaviour branch (scripts/train_prosody.py, voiceguard.prosody)
+prosody = ["praat-parselmouth>=0.4", "joblib>=1.3"]
 dev = ["pytest>=8", "ruff==0.16.5", "nbstripout==0.9.1", "pre-commit>=3.8"]
 
 [tool.setuptools.packages.find]
@@ -40,6 +45,10 @@ extend-exclude = ["legacy", "notebooks", "myenv", ".venv", "src/voiceguard/model
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# FastAPI puts callables (File, Depends) in argument defaults by design
+"src/voiceguard/serve/app.py" = ["B008"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

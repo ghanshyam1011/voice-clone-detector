@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VoiceGuard — Call Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#eef1f1; --surface:#ffffff; --surface-2:#e2e7e8;
+    --ink:#15202a; --ink-2:#48575f; --ink-3:#6a7880; --rule:#d2d9db;
+    --accent:#0f6e80; --accent-ink:#0b5563;
+    --good:#2f7d4f; --warn:#a9711c; --bad:#b23c37;
+    --good-bg:#e4efe7; --warn-bg:#f3e8d4; --bad-bg:#f1dedc;
+    --shadow:0 1px 2px rgba(15,32,42,.05), 0 10px 30px -16px rgba(15,32,42,.22);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --bg:#0d1418; --surface:#141e23; --surface-2:#1d2a30;
+      --ink:#e7edef; --ink-2:#a1b0b7; --ink-3:#6d7f88; --rule:#293840;
+      --accent:#3fb0c4; --accent-ink:#79c9d6;
+      --good:#54b079; --warn:#d59a41; --bad:#db655c;
+      --good-bg:#16261d; --warn-bg:#2a2113; --bad-bg:#2c1917;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 32px -18px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --bg:#0d1418; --surface:#141e23; --surface-2:#1d2a30;
+    --ink:#e7edef; --ink-2:#a1b0b7; --ink-3:#6d7f88; --rule:#293840;
+    --accent:#3fb0c4; --accent-ink:#79c9d6;
+    --good:#54b079; --warn:#d59a41; --bad:#db655c;
+    --good-bg:#16261d; --warn-bg:#2a2113; --bad-bg:#2c1917;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 32px -18px rgba(0,0,0,.7);
+  }
+  :root[data-theme="light"]{ color-scheme: light; }
+
+  *{box-sizing:border-box;margin:0}
+  [hidden]{display:none!important}
+  body{
+    background:var(--bg); color:var(--ink); line-height:1.55;
+    font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    border-top:3px solid var(--accent);
+  }
+  .wrap{max-width:60rem; margin:0 auto; padding:clamp(1.25rem,.8rem+2vw,2.5rem) clamp(1rem,.5rem+2vw,2rem) 3rem}
+  a{color:var(--accent-ink)}
+
+  header{display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap}
+  .brand{display:flex; align-items:center; gap:.55rem}
+  .brand svg{width:22px;height:22px;color:var(--accent);flex:none}
+  .brand b{font-size:1.1rem;font-weight:600}
+  .brand .sub{font-size:.85rem;color:var(--ink-2)}
+  .badge{
+    font-family:"IBM Plex Mono",monospace; font-size:.7rem; color:var(--ink-2);
+    background:var(--surface); border:1px solid var(--rule); border-radius:6px;
+    padding:.4rem .6rem; text-align:right; white-space:nowrap;
+  }
+  .badge a{display:block; margin-top:.15rem; text-decoration:none; color:var(--ink-3)}
+
+  .scenario-line{
+    font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--ink-3);
+    text-transform:uppercase; letter-spacing:.1em; margin:1.4rem 0 .5rem;
+  }
+
+  /* ---- decision banner ---- */
+  .decision{
+    display:flex; gap:1rem; align-items:flex-start;
+    background:var(--surface-2); border:1px solid var(--rule);
+    border-radius:12px; padding:1.15rem 1.25rem; box-shadow:var(--shadow);
+  }
+  .decision.allow{background:var(--good-bg); border-color:color-mix(in srgb,var(--good) 34%,transparent)}
+  .decision.verify{background:var(--warn-bg); border-color:color-mix(in srgb,var(--warn) 34%,transparent)}
+  .decision.escalate{background:var(--bad-bg); border-color:color-mix(in srgb,var(--bad) 42%,transparent)}
+  .decision-icon{
+    flex:none; width:2.2rem; height:2.2rem; border-radius:50%; background:var(--surface);
+    display:grid; place-items:center; font-weight:700; font-size:1.2rem; color:var(--ink-3);
+  }
+  .decision.allow .decision-icon{color:var(--good)}
+  .decision.verify .decision-icon{color:var(--warn)}
+  .decision.escalate .decision-icon{color:var(--bad)}
+  .decision-action{font-size:1.35rem; font-weight:700; letter-spacing:-.01em; line-height:1.15}
+  .decision.allow .decision-action{color:var(--good)}
+  .decision.verify .decision-action{color:var(--warn)}
+  .decision.escalate .decision-action{color:var(--bad)}
+  .decision-rec{font-size:.92rem; color:var(--ink-2); margin-top:.2rem}
+  .decision-score{
+    margin-left:auto; text-align:right; font-family:"IBM Plex Mono",monospace;
+    font-variant-numeric:tabular-nums; flex:none;
+  }
+  .decision-score b{font-size:1.4rem; font-weight:600}
+  .decision-score span{display:block; font-size:.62rem; color:var(--ink-3); text-transform:uppercase; letter-spacing:.08em}
+
+  /* ---- layout ---- */
+  .cols{display:grid; grid-template-columns:1.35fr 1fr; gap:1.25rem; margin-top:1.25rem}
+  @media (max-width:800px){ .cols{grid-template-columns:1fr} }
+  .card{background:var(--surface); border:1px solid var(--rule); border-radius:11px; padding:1.2rem; box-shadow:var(--shadow)}
+  .card h2{
+    font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.11em;
+    text-transform:uppercase; color:var(--accent-ink); margin-bottom:.9rem; font-weight:600;
+  }
+  .card + .card{margin-top:1.25rem}
+
+  /* ---- fused timeline ---- */
+  canvas#spark{width:100%; height:96px; display:block; background:var(--surface-2); border-radius:7px}
+  .spark-cap{font-family:"IBM Plex Mono",monospace; font-size:.66rem; color:var(--ink-3); margin-top:.35rem}
+
+  /* ---- signal meters ---- */
+  .sig{margin-top:.9rem}
+  .sig:first-of-type{margin-top:0}
+  .sig-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:.3rem}
+  .sig-label{font-size:.85rem; font-weight:500}
+  .sig-val{font-family:"IBM Plex Mono",monospace; font-size:.8rem; font-variant-numeric:tabular-nums; color:var(--ink-2)}
+  .sig-bar{height:12px; background:var(--surface-2); border-radius:3px; overflow:hidden}
+  .sig-bar i{display:block; height:100%; width:0; border-radius:3px; background:var(--ink-3); transition:width .3s, background-color .3s}
+  .sig-bar i.good{background:var(--good)} .sig-bar i.warn{background:var(--warn)} .sig-bar i.bad{background:var(--bad)}
+  .sig.muted .sig-label{color:var(--ink-3)}
+  .sig.muted .sig-val{color:var(--ink-3)}
+  .sig-planned{font-family:"IBM Plex Mono",monospace; font-size:.66rem; color:var(--ink-3)}
+
+  /* ---- reasons ---- */
+  .reasons{list-style:none; display:flex; flex-direction:column; gap:.45rem; margin-top:.3rem}
+  .reasons li{position:relative; padding-left:1rem; font-size:.86rem; line-height:1.45; color:var(--ink-2)}
+  .reasons li::before{content:""; position:absolute; left:0; top:.5em; width:5px; height:5px; border-radius:1px; background:var(--warn)}
+  .reasons:empty::after{content:"No elevated signals."; font-size:.85rem; color:var(--ink-3)}
+
+  /* ---- context panel ---- */
+  .field{margin-top:.85rem}
+  .field:first-child{margin-top:0}
+  .field label{display:block; font-size:.78rem; color:var(--ink-2); margin-bottom:.3rem}
+  .field select, .field input[type=number]{
+    font:inherit; width:100%; color:var(--ink); background:var(--surface);
+    border:1px solid var(--rule); border-radius:6px; padding:.5rem .6rem;
+  }
+  .field select:focus-visible, .field input:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+  .check{display:flex; align-items:center; gap:.5rem; font-size:.86rem; color:var(--ink); cursor:pointer}
+  .check input{width:16px; height:16px; accent-color:var(--accent)}
+  .amount-wrap{display:flex; align-items:center; gap:.4rem}
+  .amount-wrap span{font-family:"IBM Plex Mono",monospace; color:var(--ink-3)}
+
+  .btn{
+    font:600 .82rem/1 "IBM Plex Sans",sans-serif; color:#fff; background:var(--accent);
+    border:0; border-radius:8px; padding:.6rem 1rem; cursor:pointer;
+  }
+  .btn.ghost{background:transparent; color:var(--accent-ink); border:1px solid var(--rule)}
+  .btn.stop{background:var(--bad)}
+  .btn:disabled{opacity:.5; cursor:not-allowed}
+  .btn:focus-visible{outline:2px solid var(--accent-ink); outline-offset:2px}
+  .row{display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; margin-top:.5rem}
+  .pill{font-family:"IBM Plex Mono",monospace; font-size:.72rem; padding:.25rem .5rem; border-radius:5px; background:var(--surface-2); color:var(--ink-2)}
+  .pill.ok{background:var(--good-bg); color:var(--good)}
+
+  /* ---- call audio ---- */
+  .drop{
+    border:1.4px dashed var(--rule); border-radius:9px; padding:1.25rem 1rem; text-align:center;
+    cursor:pointer; font-size:.88rem; transition:border-color .15s, background .15s;
+  }
+  .drop:hover, .drop.over{border-color:var(--accent); background:var(--surface-2)}
+  .drop .sub{font-family:"IBM Plex Mono",monospace; font-size:.7rem; color:var(--ink-3); margin-top:.35rem}
+  .status{font-family:"IBM Plex Mono",monospace; font-size:.76rem; color:var(--ink-2); margin-top:.7rem; min-height:1.1rem; display:flex; align-items:center; gap:.4rem}
+  .status.err{color:var(--bad)}
+  .dot{width:8px; height:8px; border-radius:50%; background:var(--good); flex:none}
+  .dot.busy{background:var(--warn); animation:pulse 1s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.35}}
+  .spin{width:12px;height:12px;border:2px solid var(--rule);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;flex:none}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .mic-live{margin-top:.7rem; display:flex; flex-direction:column; gap:.55rem}
+  .inbar-row{display:flex; align-items:center; gap:.55rem}
+  .inbar-label{font-family:"IBM Plex Mono",monospace; font-size:.66rem; color:var(--ink-3); white-space:nowrap}
+  .inbar{flex:1; height:6px; background:var(--surface-2); border-radius:3px; overflow:hidden}
+  .inbar i{display:block; height:100%; width:0; background:var(--accent); border-radius:3px}
+  .inbar i.silent{background:var(--ink-3)}
+  .dev-row{display:flex; align-items:center; gap:.5rem; font-size:.76rem; color:var(--ink-2); flex-wrap:wrap}
+  .dev-row select{font:inherit; color:var(--ink); background:var(--surface); border:1px solid var(--rule); border-radius:6px; padding:.3rem .45rem; max-width:min(60vw,18rem)}
+
+  /* ---- audit ---- */
+  .audit-meta{font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--ink-3); margin-bottom:.5rem}
+  .audit-box{
+    font-family:"IBM Plex Mono",monospace; font-size:.72rem; line-height:1.7; color:var(--ink-2);
+    background:var(--surface-2); border-radius:7px; padding:.75rem .85rem; overflow-x:auto;
+    max-height:14rem; overflow-y:auto; white-space:pre-wrap; word-break:break-word;
+  }
+  .audit-box:empty::after{content:"No audit events yet."; color:var(--ink-3)}
+
+  .alert-card{border-color:color-mix(in srgb,var(--bad) 40%,transparent); background:var(--bad-bg)}
+  .alert-card h2{color:var(--bad)}
+  .alert-body{display:flex; flex-direction:column; gap:.6rem}
+  .alert-line{font-size:.9rem; font-weight:600; color:var(--ink)}
+  .alert-sim{font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--ink-2)}
+  .alert-card.ack{background:var(--surface-2); border-color:var(--rule)}
+  .alert-card.ack h2, .alert-card.ack .alert-line{color:var(--ink-2)}
+  .alert-card.ack #ack-btn{display:none}
+
+  footer{margin-top:2rem; padding-top:1.3rem; border-top:1px solid var(--rule)}
+  footer p{font-size:.78rem; line-height:1.5; color:var(--ink-3); max-width:70ch}
+  @media (prefers-reduced-motion: reduce){*{animation:none!important; transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M2 12h3l2-6 3 15 3-19 3 13 2-3h4"></path>
+        </svg>
+        <b>VoiceGuard</b>
+      </div>
+      <div class="sub">Live-call console &mdash; synthetic speech, speaker consistency &amp; call context in one decision</div>
+    </div>
+    <div class="badge" id="badge" title="detection model">loading&hellip;<a href="/detector">raw detector &rarr;</a></div>
+  </header>
+
+  <div class="scenario-line">Call in progress &mdash; <span id="scenario-name">transaction</span></div>
+
+  <!-- decision banner -->
+  <div class="decision" id="decision">
+    <div class="decision-icon" id="dec-icon">&middot;</div>
+    <div>
+      <div class="decision-action" id="dec-action">Waiting for call audio</div>
+      <div class="decision-rec" id="dec-rec">Enrol the caller's voice, then play or stream the call.</div>
+    </div>
+    <div class="decision-score"><b id="dec-score">&mdash;</b><span>risk / 100</span></div>
+  </div>
+
+  <div class="cols">
+    <!-- LEFT: signals -->
+    <div>
+      <div class="card">
+        <h2>Fused risk over the call</h2>
+        <canvas id="spark" width="720" height="96" aria-hidden="true"></canvas>
+        <div class="spark-cap">higher = more suspicious &middot; the three signals below, weighted and smoothed</div>
+      </div>
+
+      <div class="card">
+        <h2>Contributing signals</h2>
+        <div class="sig" id="sig-spoof">
+          <div class="sig-head"><span class="sig-label">Synthetic voice</span><span class="sig-val" id="sig-spoof-val">&mdash;</span></div>
+          <div class="sig-bar"><i id="sig-spoof-fill"></i></div>
+        </div>
+        <div class="sig" id="sig-speaker">
+          <div class="sig-head"><span class="sig-label">Speaker mismatch</span><span class="sig-val" id="sig-speaker-val">&mdash;</span></div>
+          <div class="sig-bar"><i id="sig-speaker-fill"></i></div>
+        </div>
+        <div class="sig" id="sig-prosody">
+          <div class="sig-head"><span class="sig-label">Prosody / behaviour</span><span class="sig-val" id="sig-prosody-val">&mdash;</span></div>
+          <div class="sig-bar"><i id="sig-prosody-fill"></i></div>
+        </div>
+        <div class="sig" id="sig-context">
+          <div class="sig-head"><span class="sig-label">Call context</span><span class="sig-val" id="sig-context-val">&mdash;</span></div>
+          <div class="sig-bar"><i id="sig-context-fill"></i></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Why</h2>
+        <ul class="reasons" id="reasons"></ul>
+      </div>
+    </div>
+
+    <!-- RIGHT: context + audio + audit -->
+    <div>
+      <div class="card">
+        <h2>Call context</h2>
+        <div class="field">
+          <label for="f-scenario">Scenario</label>
+          <select id="f-scenario">
+            <option value="routine">Routine support call</option>
+            <option value="transaction" selected>Payment / transfer on the call</option>
+            <option value="privileged">Privileged change (reset, beneficiary)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="check"><input type="checkbox" id="f-caller"> Caller's number is in known contacts</label>
+        </div>
+        <div class="field">
+          <label for="f-amount">Transfer amount discussed</label>
+          <div class="amount-wrap"><span>&#8377;</span><input type="number" id="f-amount" min="0" step="1000" value="0"></div>
+        </div>
+        <div class="row">
+          <button class="btn ghost" id="enrol-btn">Record 6 s</button>
+          <button class="btn ghost" id="enrol-file-btn">Enrol from a file</button>
+          <span class="pill" id="enrol-pill">not enrolled</span>
+        </div>
+        <input type="file" id="enrol-file" accept="audio/*,.wav,.flac,.mp3,.m4a,.ogg" hidden>
+      </div>
+
+      <div class="card">
+        <h2>Call audio</h2>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Load a call recording">
+          Drop a call recording, or click to choose
+          <div class="sub">wav &middot; flac &middot; mp3 &middot; m4a</div>
+        </div>
+        <input type="file" id="file" accept="audio/*,.wav,.flac,.mp3,.m4a,.ogg" hidden>
+        <div class="row">
+          <button class="btn" id="mic-btn">Use microphone instead</button>
+        </div>
+        <div class="mic-live" id="mic-live" hidden>
+          <div class="inbar-row"><span class="inbar-label">mic input</span><div class="inbar"><i id="mic-inlevel"></i></div></div>
+          <div class="dev-row" id="mic-devrow" hidden>
+            <label for="mic-device">Input</label>
+            <select id="mic-device"></select>
+          </div>
+        </div>
+        <div class="status" id="status">Idle.</div>
+      </div>
+
+      <div class="card alert-card" id="alert-card" hidden>
+        <h2>Alert</h2>
+        <div class="alert-body">
+          <div class="alert-line" id="alert-line">&mdash;</div>
+          <div class="alert-sim">Simulated: SMS to supervisor &middot; email to fraud-ops@bank &middot; in-app banner to the agent</div>
+          <button class="btn" id="ack-btn">Acknowledge</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Audit trail</h2>
+        <div class="audit-meta" id="audit-meta">feature-only &mdash; no audio, transcript or voiceprint is stored</div>
+        <div class="audit-box" id="audit-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Decision-support for a human agent, not an automated block. Risk is a relative score, not a
+    probability. Synthetic-voice detection is strongest on known methods; the speaker check needs a
+    clean 6-second enrolment. Alerts, gRPC and Indian-language evaluation are on the roadmap, not in
+    this build.</p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  let TH = { genuine: 0.35, synthetic: 0.65 };
+  let SID = null;
+  let lastClip = null;      // File, for re-analysis on context change
+  let ws = null, ac = null, micProc = null, micStream = null, streaming = false;
+  const history = [];
+  let auditCount = 0;
+  let lastAction = "ALLOW";
+
+  const band = (r) => (r == null ? "" : r >= 0.65 ? "bad" : r <= 0.35 ? "good" : "warn");
+  const pctInt = (r) => (r == null ? "—" : Math.round(r * 100));
+
+  /* ---------- boot ---------- */
+  async function boot() {
+    await loadInfo();
+    await newSession();
+    drawSpark();
+  }
+  async function loadInfo(t = 0) {
+    try {
+      const d = await (await fetch("/api/info")).json();
+      TH = { genuine: d.genuine_below, synthetic: d.synthetic_above };
+      const dev = /cuda|gpu/i.test(d.device || "") ? "GPU" : "CPU";
+      $("badge").innerHTML = `AASIST + WavLM · ${dev}<a href="/detector">raw detector →</a>`;
+    } catch (e) {
+      if (t < 15) return void setTimeout(() => loadInfo(t + 1), 800);
+      $("badge").textContent = "model unavailable";
+    }
+  }
+  async function newSession() {
+    const body = {
+      scenario: $("f-scenario").value,
+      caller_known: $("f-caller").checked,
+      amount: Number($("f-amount").value) || 0,
+    };
+    const d = await (await fetch("/api/session", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+    })).json();
+    SID = d.session_id;
+    $("scenario-name").textContent = d.scenario;
+  }
+
+  /* ---------- context controls ---------- */
+  async function pushContext() {
+    if (!SID) return;
+    const body = {
+      scenario: $("f-scenario").value,
+      caller_known: $("f-caller").checked,
+      amount: Number($("f-amount").value) || 0,
+    };
+    await fetch(`/api/session/${SID}/context`, {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+    });
+    $("scenario-name").textContent = body.scenario;
+    if (lastClip && !streaming) analyzeClip(lastClip, true);
+  }
+  $("f-scenario").addEventListener("change", pushContext);
+  $("f-caller").addEventListener("change", pushContext);
+  let amtT;
+  $("f-amount").addEventListener("input", () => { clearTimeout(amtT); amtT = setTimeout(pushContext, 400); });
+
+  /* ---------- enrolment ---------- */
+  async function sendEnrol(blob, name) {
+    const fd = new FormData();
+    fd.append("file", blob, name);
+    const r = await fetch(`/api/session/${SID}/enroll`, { method: "POST", body: fd });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || "enrolment failed");
+    $("enrol-pill").textContent = `enrolled · ${d.seconds.toFixed(1)}s`;
+    $("enrol-pill").classList.add("ok");
+    setStatus(
+      d.short
+        ? "Enrolled, but the sample is short — 6 s+ is more reliable."
+        : "Caller enrolled. Load or stream the call audio.",
+      d.short ? "err" : "",
+    );
+    if (lastClip && !streaming) analyzeClip(lastClip, true);
+  }
+
+  $("enrol-btn").addEventListener("click", async () => {
+    const btn = $("enrol-btn");
+    btn.disabled = true;
+    setStatus('<span class="dot busy"></span> recording 6 seconds…');
+    try {
+      const { pcm, rate } = await captureSeconds(6);
+      await sendEnrol(encodeWav(pcm, rate), "enrol.wav");
+    } catch (e) {
+      setStatus("Recording failed: " + (e.message || e) + " — try 'Enrol from a file'.", "err");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  $("enrol-file-btn").addEventListener("click", () => $("enrol-file").click());
+  $("enrol-file").addEventListener("change", async () => {
+    const f = $("enrol-file").files[0];
+    if (!f) return;
+    setStatus(`<span class="spin"></span> enrolling from ${f.name}…`);
+    try {
+      await sendEnrol(f, f.name);
+    } catch (e) {
+      setStatus("Enrolment failed: " + (e.message || e), "err");
+    }
+  });
+
+  /* ---------- file analysis ---------- */
+  const drop = $("drop"), fileInput = $("file");
+  drop.addEventListener("click", () => fileInput.click());
+  drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } });
+  ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) analyzeClip(f); });
+  fileInput.addEventListener("change", () => { if (fileInput.files[0]) analyzeClip(fileInput.files[0]); });
+
+  async function analyzeClip(file, quiet) {
+    lastClip = file;
+    if (streaming) stopMic();
+    if (!quiet) setStatus(`<span class="spin"></span> analysing ${file.name}…`);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await fetch(`/api/session/${SID}/analyze`, { method: "POST", body: fd });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || "analysis failed");
+      history.length = 0;
+      (d.clip && d.clip.smoothed ? d.clip.smoothed : [d.fused]).forEach((x) => history.push(x));
+      render(d);
+      setStatus(`Analysed ${file.name} · ${d.clip ? d.clip.duration_s.toFixed(1) + "s" : ""}`);
+    } catch (e) {
+      setStatus("Analysis failed: " + (e.message || e), "err");
+    }
+  }
+
+  /* ---------- live mic ---------- */
+  let micDevice = "", micSilentTicks = 0, micBusy = false;
+  const micSel = $("mic-device");
+  $("mic-btn").addEventListener("click", () => (streaming ? stopMic() : startMic()));
+  micSel.addEventListener("change", async () => {
+    micDevice = micSel.value;
+    if (streaming || micBusy) { stopMic(); await new Promise((r) => setTimeout(r, 150)); startMic(); }
+  });
+
+  async function listMics() {
+    try {
+      const ins = (await navigator.mediaDevices.enumerateDevices())
+        .filter((d) => d.kind === "audioinput" && d.deviceId && d.deviceId !== "default");
+      if (ins.length < 2) return;
+      const sig = ins.map((d) => d.deviceId).join("|");
+      if (micSel.dataset.sig !== sig) {
+        micSel.innerHTML = ins
+          .map((d, i) => `<option value="${d.deviceId}">${(d.label || "Microphone " + (i + 1)).replace(/["<>]/g, "")}</option>`)
+          .join("");
+        micSel.dataset.sig = sig;
+      }
+      if (micDevice && ins.some((d) => d.deviceId === micDevice)) micSel.value = micDevice;
+      $("mic-devrow").hidden = false;
+    } catch (e) { /* ignore */ }
+  }
+
+  async function startMic() {
+    if (micBusy || streaming) return;
+    micBusy = true;
+    let stream;
+    try {
+      const audio = micDevice ? { deviceId: { exact: micDevice } } : true;
+      stream = await navigator.mediaDevices.getUserMedia({ audio });
+    } catch (e) {
+      micBusy = false;
+      const n = (e && e.name) || "";
+      setStatus(
+        n === "NotAllowedError"
+          ? "Microphone blocked — allow it via the address-bar icon, then click again."
+          : "Could not open the microphone — another app or tab may be using it.",
+        "err",
+      );
+      return;
+    }
+    const track = stream.getAudioTracks()[0];
+    if (!track || track.readyState !== "live") {
+      stream.getTracks().forEach((t) => t.stop());
+      micBusy = false;
+      setStatus("The microphone did not start. Close other apps/tabs using it and try again.", "err");
+      return;
+    }
+    if (!micDevice) {
+      try { const s = track.getSettings && track.getSettings(); if (s && s.deviceId) micDevice = s.deviceId; } catch (e) {}
+    }
+    track.onmute = () => { if (streaming) setStatus("The microphone was muted — another app took it.", "err"); };
+
+    micStream = stream;
+    streaming = true;
+    lastClip = null;
+    history.length = 0;
+    micSilentTicks = 0;
+    $("mic-btn").textContent = "Stop microphone";
+    $("mic-btn").classList.add("stop");
+    $("mic-live").hidden = false;
+    listMics();
+    setStatus('<span class="dot busy"></span> starting microphone…');
+
+    // native sample rate — forcing 16 kHz makes a hardware mic come through silent
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    try { await ac.resume(); } catch (e) {}
+    if (ac.state !== "running") {
+      setStatus("Audio is paused by the browser — click the page, then try again.", "err");
+      stopMic();
+      return;
+    }
+    const src = ac.createMediaStreamSource(stream);
+    const proc = ac.createScriptProcessor(4096, 1, 1);
+    const mute = ac.createGain(); mute.gain.value = 0;
+    micProc = proc;
+    let acc = [], n = 0;
+    proc.onaudioprocess = (e) => {
+      const d = e.inputBuffer.getChannelData(0);
+      acc.push(new Float32Array(d)); n += d.length;
+      if (n >= 4096 && ws && ws.readyState === 1) {
+        const out = new Float32Array(n); let o = 0;
+        for (const a of acc) { out.set(a, o); o += a.length; }
+        acc = []; n = 0; ws.send(out.buffer);
+      }
+    };
+    src.connect(proc); proc.connect(mute); mute.connect(ac.destination);
+
+    ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/api/session/${SID}/stream`);
+    ws.binaryType = "arraybuffer";
+    ws.onopen = () => { micBusy = false; ws.send(JSON.stringify({ sampleRate: ac.sampleRate })); setStatus('<span class="dot"></span> streaming the call…'); };
+    ws.onmessage = (ev) => {
+      const m = JSON.parse(ev.data);
+      if (m.error) { setStatus("Stream error: " + m.error, "err"); stopMic(); return; }
+      const lvl = m.level ?? 0;
+      $("mic-inlevel").style.width = Math.min(100, Math.sqrt(lvl) * 160) + "%";
+      $("mic-inlevel").classList.toggle("silent", lvl < 0.004);
+      micSilentTicks = lvl < 0.002 ? micSilentTicks + 1 : 0;
+      if (micSilentTicks >= 6) {
+        setStatus('<span class="dot busy"></span> no sound is reaching the model — check the input above, or close other apps using the mic', "err");
+      } else if (m.warming) {
+        setStatus('<span class="dot busy"></span> building up the first few seconds…');
+      } else {
+        setStatus('<span class="dot"></span> streaming the call…');
+      }
+      history.push(m.fused);
+      if (history.length > 160) history.shift();
+      render(m);
+    };
+    ws.onclose = () => { if (streaming) stopMic(); };
+    ws.onerror = () => setStatus("Stream connection lost.", "err");
+  }
+  function stopMic() {
+    streaming = false;
+    micBusy = false;
+    try { if (ws) { ws.onclose = ws.onmessage = ws.onerror = null; ws.close(); } } catch (e) {}
+    try { micProc && (micProc.onaudioprocess = null, micProc.disconnect()); } catch (e) {}
+    try { micStream && micStream.getTracks().forEach((t) => t.stop()); } catch (e) {}
+    try { ac && ac.close(); } catch (e) {}
+    ws = micProc = micStream = ac = null;
+    micSilentTicks = 0;
+    $("mic-btn").textContent = "Use microphone instead";
+    $("mic-btn").classList.remove("stop");
+    $("mic-live").hidden = true;
+    $("mic-inlevel").style.width = "0";
+    setStatus("Microphone stopped.");
+  }
+
+  /* ---------- render ---------- */
+  function render(d) {
+    const act = d.action || "ALLOW";
+    const dec = $("decision");
+    dec.className = "decision " + act.toLowerCase();
+    $("dec-icon").textContent = { ALLOW: "✓", VERIFY: "?", ESCALATE: "!" }[act] || "·";
+    $("dec-action").textContent = { ALLOW: "ALLOW", VERIFY: "VERIFY CALLER", ESCALATE: "ESCALATE" }[act];
+    $("dec-rec").textContent = d.recommendation || "";
+    $("dec-score").textContent = pctInt(d.fused);
+    updateAlert(act, d);
+
+    setSig("spoof", d.spoof);
+    setSig("speaker", d.speaker);
+    setSig("prosody", d.prosody);
+    setSig("context", d.context);
+
+    const ul = $("reasons");
+    ul.innerHTML = "";
+    (d.reasons || []).forEach((r) => {
+      const li = document.createElement("li");
+      li.textContent = r;
+      ul.appendChild(li);
+    });
+
+    drawSpark();
+    if (d.audit_event) prependAudit(d.audit_event);
+  }
+  const RANK = { ALLOW: 0, VERIFY: 1, ESCALATE: 2 };
+  function updateAlert(act, d) {
+    const card = $("alert-card");
+    if (act === "ALLOW") { card.hidden = true; lastAction = act; return; }
+    // rising to a higher alert level -> (re)raise, un-acknowledged
+    if ((RANK[act] || 0) > (RANK[lastAction] || 0) || card.hidden) {
+      card.hidden = false;
+      card.classList.remove("ack");
+      $("alert-line").textContent =
+        (act === "ESCALATE" ? "ESCALATE — " : "Verify the caller — ") + (d.recommendation || "");
+      $("ack-btn").disabled = false;
+    }
+    lastAction = act;
+  }
+  $("ack-btn").addEventListener("click", async () => {
+    $("ack-btn").disabled = true;
+    try {
+      const r = await (await fetch(`/api/session/${SID}/acknowledge`, { method: "POST" })).json();
+      $("alert-card").classList.add("ack");
+      $("alert-line").textContent = "Acknowledged by the agent.";
+      if (r.audit_event) prependAudit(r.audit_event);
+    } catch (e) {
+      $("ack-btn").disabled = false;
+    }
+  });
+
+  function prependAudit(e) {
+    auditCount += 1;
+    $("audit-meta").textContent =
+      `${auditCount} audit event${auditCount === 1 ? "" : "s"} this call · feature-only — no audio, transcript or voiceprint stored`;
+    const row = JSON.stringify(
+      { utc: e.utc, action: e.action, fused: e.fused, signals: e.signals, reasons: e.reasons },
+      null, 1,
+    );
+    $("audit-box").textContent = row + "\n\n" + $("audit-box").textContent;
+  }
+
+  function setSig(name, v) {
+    const has = v != null;
+    $(`sig-${name}-val`).textContent = has ? pctInt(v) : "—";
+    const fill = $(`sig-${name}-fill`);
+    fill.className = has ? band(v) : "";
+    fill.style.width = has ? Math.max(2, v * 100) + "%" : "0";
+    $(`sig-${name}`).classList.toggle("muted", !has);
+  }
+
+  /* ---------- sparkline ---------- */
+  const spark = $("spark"), sc = spark.getContext("2d");
+  function sizeSpark() {
+    const r = window.devicePixelRatio || 1;
+    const w = spark.clientWidth || 720, h = spark.clientHeight || 96;
+    spark.width = w * r; spark.height = h * r; sc.setTransform(r, 0, 0, r, 0, 0);
+  }
+  window.addEventListener("resize", () => { sizeSpark(); drawSpark(); });
+  sizeSpark();
+  function drawSpark() {
+    const css = getComputedStyle(document.body);
+    const c = (v) => css.getPropertyValue(v).trim() || "#888";
+    const w = spark.clientWidth || 720, h = spark.clientHeight || 96;
+    sc.clearRect(0, 0, w, h);
+    const Y = (r) => (1 - r) * (h - 8) + 4;
+    sc.font = '10px "IBM Plex Mono", monospace'; sc.textAlign = "left";
+    [[TH.genuine, c("--good")], [TH.synthetic, c("--bad")]].forEach(([r, col]) => {
+      sc.strokeStyle = col; sc.globalAlpha = 0.3; sc.setLineDash([3, 3]); sc.lineWidth = 1;
+      sc.beginPath(); sc.moveTo(0, Y(r)); sc.lineTo(w, Y(r)); sc.stroke();
+    });
+    sc.setLineDash([]); sc.globalAlpha = 1;
+    if (history.length < 2) {
+      sc.fillStyle = c("--ink-3");
+      sc.fillText("risk timeline appears here once a call is loaded", 6, h / 2);
+      return;
+    }
+    const n = history.length, dx = w / Math.max(n - 1, 1);
+    const last = history[n - 1];
+    const col = last >= TH.synthetic ? c("--bad") : last <= TH.genuine ? c("--good") : c("--warn");
+    sc.beginPath(); sc.moveTo(0, h);
+    history.forEach((r, i) => sc.lineTo(i * dx, Y(r)));
+    sc.lineTo((n - 1) * dx, h); sc.closePath();
+    sc.fillStyle = col; sc.globalAlpha = 0.14; sc.fill();
+    sc.globalAlpha = 1; sc.strokeStyle = col; sc.lineWidth = 2; sc.lineJoin = "round";
+    sc.beginPath();
+    history.forEach((r, i) => (i ? sc.lineTo(i * dx, Y(r)) : sc.moveTo(0, Y(r))));
+    sc.stroke();
+    sc.fillStyle = col; sc.beginPath(); sc.arc((n - 1) * dx, Y(last), 3, 0, 7); sc.fill();
+  }
+
+  /* ---------- audio helpers ---------- */
+  function setStatus(html, kind) {
+    $("status").className = "status" + (kind === "err" ? " err" : "");
+    $("status").innerHTML = html;
+  }
+  async function captureSeconds(secs) {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const c = new (window.AudioContext || window.webkitAudioContext)();
+    try { await c.resume(); } catch (e) {}
+    const src = c.createMediaStreamSource(stream);
+    const proc = c.createScriptProcessor(4096, 1, 1);
+    const mute = c.createGain(); mute.gain.value = 0;
+    const chunks = []; let total = 0;
+    const done = new Promise((res, rej) => {
+      const timer = setTimeout(
+        () => (total > c.sampleRate * 1.5 ? res() : rej(new Error("no audio from the microphone"))),
+        (secs + 4) * 1000,
+      );
+      proc.onaudioprocess = (e) => {
+        const d = e.inputBuffer.getChannelData(0);
+        chunks.push(new Float32Array(d)); total += d.length;
+        if (total >= c.sampleRate * secs) { clearTimeout(timer); res(); }
+      };
+    });
+    try {
+      src.connect(proc); proc.connect(mute); mute.connect(c.destination);
+      await done;
+    } finally {
+      proc.onaudioprocess = null;
+      stream.getTracks().forEach((t) => t.stop());
+    }
+    const rate = c.sampleRate;
+    try { await c.close(); } catch (e) {}
+    const all = new Float32Array(total); let o = 0;
+    for (const ch of chunks) { all.set(ch, o); o += ch.length; }
+    return { pcm: all, rate };
+  }
+  function encodeWav(f32, sr) {
+    const n = f32.length, buf = new ArrayBuffer(44 + n * 2), dv = new DataView(buf);
+    const s = (o, str) => { for (let i = 0; i < str.length; i++) dv.setUint8(o + i, str.charCodeAt(i)); };
+    s(0, "RIFF"); dv.setUint32(4, 36 + n * 2, true); s(8, "WAVE"); s(12, "fmt ");
+    dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+    dv.setUint32(24, sr, true); dv.setUint32(28, sr * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true);
+    s(36, "data"); dv.setUint32(40, n * 2, true);
+    for (let i = 0; i < n; i++) { const v = Math.max(-1, Math.min(1, f32[i])); dv.setInt16(44 + i * 2, v * 32767, true); }
+    return new Blob([buf], { type: "audio/wav" });
+  }
+
+  window.addEventListener("beforeunload", () => { try { stopMic(); } catch (e) {} });
+  boot();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VoiceGuard Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#eef1f1; --surface:#ffffff; --surface-2:#e2e7e8;
+    --ink:#15202a; --ink-2:#48575f; --ink-3:#6a7880;
+    --rule:#d2d9db;
+    --accent:#0f6e80; --accent-ink:#0b5563;
+    --good:#2f7d4f; --warn:#a9711c; --bad:#b23c37;
+    --good-bg:#e4efe7; --warn-bg:#f3e8d4; --bad-bg:#f1dedc;
+    --shadow:0 1px 2px rgba(15,32,42,.05), 0 10px 30px -16px rgba(15,32,42,.22);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --bg:#0d1418; --surface:#141e23; --surface-2:#1d2a30;
+      --ink:#e7edef; --ink-2:#a1b0b7; --ink-3:#6d7f88;
+      --rule:#293840;
+      --accent:#3fb0c4; --accent-ink:#79c9d6;
+      --good:#54b079; --warn:#d59a41; --bad:#db655c;
+      --good-bg:#16261d; --warn-bg:#2a2113; --bad-bg:#2c1917;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 32px -18px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --bg:#0d1418; --surface:#141e23; --surface-2:#1d2a30;
+    --ink:#e7edef; --ink-2:#a1b0b7; --ink-3:#6d7f88;
+    --rule:#293840;
+    --accent:#3fb0c4; --accent-ink:#79c9d6;
+    --good:#54b079; --warn:#d59a41; --bad:#db655c;
+    --good-bg:#16261d; --warn-bg:#2a2113; --bad-bg:#2c1917;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 32px -18px rgba(0,0,0,.7);
+  }
+  :root[data-theme="light"]{ color-scheme: light; }
+
+  *{box-sizing:border-box;margin:0}
+  [hidden]{display:none!important}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    line-height:1.6; border-top:3px solid var(--accent);
+  }
+  .wrap{max-width:44rem; margin:0 auto; padding:clamp(1.5rem,1rem+2.5vw,3rem) clamp(1rem,.5rem+2vw,2rem) 3.5rem}
+
+  /* ---- header ---- */
+  header{display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap}
+  .brand{display:flex; align-items:center; gap:.6rem}
+  .brand svg{width:22px; height:22px; flex:none; color:var(--accent)}
+  .brand b{font-weight:600; font-size:1.15rem; letter-spacing:-.01em}
+  .tagline{font-size:.9rem; color:var(--ink-2); margin-top:.5rem}
+  .badge{
+    font-family:"IBM Plex Mono", ui-monospace, monospace;
+    font-size:.72rem; line-height:1.5; color:var(--ink-2);
+    background:var(--surface); border:1px solid var(--rule); border-radius:6px;
+    padding:.45rem .65rem; text-align:right; white-space:nowrap;
+  }
+  .badge .dot{color:var(--ink-3)}
+  .badge.loading{color:var(--ink-3)}
+
+  /* ---- tabs ---- */
+  .tabs{display:flex; gap:.35rem; margin:1.75rem 0 1.1rem; background:var(--surface-2); padding:.3rem; border-radius:9px; width:max-content}
+  .tab{
+    font:500 .85rem/1 "IBM Plex Sans",sans-serif; color:var(--ink-2);
+    padding:.6rem 1rem; border:0; background:transparent; border-radius:6px; cursor:pointer;
+  }
+  .tab[aria-selected="true"]{background:var(--surface); color:var(--ink); box-shadow:var(--shadow)}
+  .tab:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  .card{
+    background:var(--surface); border:1px solid var(--rule); border-radius:12px;
+    padding:clamp(1.1rem,.8rem+1.5vw,1.75rem); box-shadow:var(--shadow);
+  }
+  .panel[hidden]{display:none}
+  .intro{font-size:.98rem; line-height:1.55; color:var(--ink-2); margin-top:.7rem; max-width:54ch}
+
+  /* ---- plain-language verdict (shared) ---- */
+  .verdict{
+    display:flex; gap:.8rem; align-items:flex-start;
+    padding:.95rem 1.05rem; border-radius:10px;
+    border:1px solid var(--rule); background:var(--surface-2);
+  }
+  .verdict.good{background:var(--good-bg); border-color:color-mix(in srgb,var(--good) 32%,transparent)}
+  .verdict.warn{background:var(--warn-bg); border-color:color-mix(in srgb,var(--warn) 32%,transparent)}
+  .verdict.bad{background:var(--bad-bg);  border-color:color-mix(in srgb,var(--bad) 38%,transparent)}
+  .verdict-icon{
+    flex:none; width:1.7rem; height:1.7rem; border-radius:50%;
+    display:grid; place-items:center; font-weight:700; font-size:1rem;
+    background:var(--surface); color:var(--ink-3);
+  }
+  .verdict.good .verdict-icon{color:var(--good)}
+  .verdict.warn .verdict-icon{color:var(--warn)}
+  .verdict.bad  .verdict-icon{color:var(--bad)}
+  .verdict-headline{font-weight:600; font-size:1.15rem; letter-spacing:-.01em; text-wrap:balance}
+  .verdict.good .verdict-headline{color:var(--good)}
+  .verdict.warn .verdict-headline{color:var(--warn)}
+  .verdict.bad  .verdict-headline{color:var(--bad)}
+  .verdict-sub{
+    font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink-2);
+    margin-top:.25rem; font-variant-numeric:tabular-nums;
+  }
+
+  /* ---- gauge zone labels (shared) ---- */
+  .zones{display:flex; margin-top:.45rem; text-align:center}
+  .zones .z{
+    display:flex; flex-direction:column; gap:1px; padding-top:.32rem;
+    border-top:2px solid var(--rule);
+    font-family:"IBM Plex Mono",monospace; font-size:.62rem; color:var(--ink-3);
+  }
+  .zones .z b{font-weight:600; font-size:.68rem; letter-spacing:.01em}
+  .zones .z:nth-child(1){width:35%; border-color:color-mix(in srgb,var(--good) 55%,transparent)}
+  .zones .z:nth-child(2){width:30%; border-color:color-mix(in srgb,var(--warn) 55%,transparent)}
+  .zones .z:nth-child(3){width:35%; border-color:color-mix(in srgb,var(--bad) 55%,transparent)}
+  .zones .z:nth-child(1) b{color:var(--good)}
+  .zones .z:nth-child(2) b{color:var(--warn)}
+  .zones .z:nth-child(3) b{color:var(--bad)}
+
+  .hint{
+    font-size:.85rem; line-height:1.55; color:var(--ink-2);
+    background:var(--surface-2); border-radius:8px; padding:.75rem .9rem; margin-top:1rem;
+  }
+  .hint b{color:var(--ink)}
+  .chart-cap{font-size:.78rem; line-height:1.5; color:var(--ink-3); margin-top:.45rem; max-width:58ch}
+
+  /* ---- dropzone ---- */
+  .drop{
+    border:1.5px dashed var(--rule); border-radius:10px; padding:2.25rem 1.25rem;
+    text-align:center; cursor:pointer; transition:border-color .15s, background .15s;
+  }
+  .drop:hover, .drop.over{border-color:var(--accent); background:var(--surface-2)}
+  .drop:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .drop .big{font-size:1rem; font-weight:500}
+  .drop .sub{font-family:"IBM Plex Mono",monospace; font-size:.74rem; color:var(--ink-3); margin-top:.5rem}
+  .drop svg{width:26px;height:26px;color:var(--ink-3);margin-bottom:.6rem}
+
+  .status-line{
+    font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink-2);
+    display:flex; align-items:center; gap:.5rem; margin-top:1rem;
+  }
+  .status-line.err{color:var(--bad)}
+  .spinner{
+    width:13px;height:13px;border-radius:50%;border:2px solid var(--rule);
+    border-top-color:var(--accent); animation:spin .7s linear infinite; flex:none;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ---- result ---- */
+  .result{margin-top:1.5rem; display:flex; flex-direction:column; gap:1.35rem}
+
+  .meter{position:relative; height:26px; background:var(--surface-2); border-radius:5px; overflow:hidden}
+  .meter-fill{position:absolute; inset:0 auto 0 0; width:0; border-radius:5px; transition:width .35s ease, background-color .35s ease}
+  .meter-fill.good{background:var(--good)} .meter-fill.warn{background:var(--warn)} .meter-fill.bad{background:var(--bad)}
+  .meter-mark{position:absolute; top:-4px; bottom:-4px; width:0; border-left:2px dotted var(--ink-3); opacity:.6}
+
+  .callout{
+    font-size:.83rem; line-height:1.5; color:var(--bad);
+    background:var(--bad-bg); border-radius:6px; padding:.55rem .75rem;
+    border:1px solid color-mix(in srgb,var(--bad) 25%,transparent);
+  }
+  .chart-label{font-family:"IBM Plex Mono",monospace; font-size:.7rem; text-transform:uppercase; letter-spacing:.09em; color:var(--accent-ink); margin-bottom:.5rem}
+  .chart-wrap{overflow-x:auto}
+  svg.timeline{width:100%; min-width:22rem; height:auto; display:block}
+  .meta{font-size:.78rem; line-height:1.5; color:var(--ink-3); margin-top:.15rem}
+
+  /* ---- live mic ---- */
+  canvas#spark{width:100%; height:120px; display:block; background:var(--surface-2); border-radius:7px}
+  .mic-status{
+    font-family:"IBM Plex Mono",monospace; font-size:.78rem; color:var(--ink-2);
+    display:flex; align-items:center; gap:.55rem; margin-top:.9rem; min-height:1.2rem;
+  }
+  .mic-status.err{color:var(--bad)}
+  .live-dot{width:9px;height:9px;border-radius:50%;background:var(--good);flex:none}
+  .live-dot.warm{background:var(--warn); animation:pulse 1.1s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.35}}
+  .warmbar{height:4px; background:var(--surface-2); border-radius:2px; overflow:hidden; margin-top:.6rem}
+  .warmbar i{display:block; height:100%; background:var(--warn); width:0; transition:width .3s}
+
+  .inbar-row{display:flex; align-items:center; gap:.6rem; margin-top:.75rem}
+  .inbar-label{font-family:"IBM Plex Mono",monospace; font-size:.68rem; color:var(--ink-3); white-space:nowrap}
+  .inbar{flex:1; height:6px; background:var(--surface-2); border-radius:3px; overflow:hidden}
+  .inbar i{display:block; height:100%; width:0; background:var(--accent); border-radius:3px}
+  .inbar i.silent{background:var(--ink-3)}
+
+  .dev-row{display:flex; align-items:center; gap:.55rem; margin-top:1rem; font-size:.8rem; color:var(--ink-2); flex-wrap:wrap}
+  .dev-row select{
+    font:inherit; color:var(--ink); background:var(--surface);
+    border:1px solid var(--rule); border-radius:6px; padding:.35rem .5rem; max-width:min(70vw,22rem);
+  }
+  .dev-row select:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+
+  .btn{
+    font:600 .85rem/1 "IBM Plex Sans",sans-serif; color:#fff; background:var(--accent);
+    border:0; border-radius:8px; padding:.7rem 1.15rem; cursor:pointer; margin-top:1.1rem;
+  }
+  .btn.stop{background:var(--bad)}
+  .btn:focus-visible{outline:2px solid var(--accent-ink); outline-offset:2px}
+  .btn:disabled{opacity:.5; cursor:not-allowed}
+
+  footer{margin-top:2rem; padding-top:1.4rem; border-top:1px solid var(--rule); display:flex; flex-direction:column; gap:.5rem}
+  footer p{font-size:.8rem; line-height:1.5; color:var(--ink-3); max-width:60ch}
+  footer code{font-family:"IBM Plex Mono",monospace; font-size:.92em; color:var(--ink-2)}
+
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important; transition:none!important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M2 12h3l2-6 3 15 3-19 3 13 2-3h4"></path>
+        </svg>
+        <b>VoiceGuard</b>
+      </div>
+      <div class="tagline">Is this a real voice, or an AI clone? &mdash; SIH26104</div>
+    </div>
+    <div class="badge loading" id="badge" title="the detection model">loading model&hellip;</div>
+  </header>
+
+  <p class="intro">VoiceGuard listens to speech and estimates how likely it is to be <strong>AI-generated or cloned</strong>, rather than a real person. Check a saved audio clip, or run it live on your microphone.</p>
+
+  <div class="tabs" role="tablist" aria-label="Demo mode">
+    <button class="tab" id="tab-file" role="tab" aria-selected="true" aria-controls="panel-file">Analyze a clip</button>
+    <button class="tab" id="tab-mic" role="tab" aria-selected="false" aria-controls="panel-mic">Live microphone</button>
+  </div>
+
+  <!-- ============ FILE ============ -->
+  <section class="card panel" id="panel-file" role="tabpanel" aria-labelledby="tab-file">
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose an audio file">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 15V3m0 0L8 7m4-4 4 4"></path><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"></path>
+      </svg>
+      <div class="big">Drop an audio file, or click to choose</div>
+      <div class="sub">wav &middot; flac &middot; mp3 &middot; m4a &middot; ogg &nbsp;|&nbsp; up to ~150 s</div>
+    </div>
+    <input type="file" id="file" accept="audio/*,.wav,.flac,.mp3,.m4a,.ogg" hidden>
+
+    <div class="status-line" id="file-status" hidden></div>
+
+    <div class="result" id="result" hidden>
+      <div class="verdict" id="v-verdict">
+        <span class="verdict-icon" id="v-icon">&mdash;</span>
+        <div>
+          <div class="verdict-headline" id="v-headline">&mdash;</div>
+          <div class="verdict-sub" id="v-sub"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="meter" id="v-meter">
+          <div class="meter-fill" id="v-fill"></div>
+          <div class="meter-mark" style="left:35%"></div>
+          <div class="meter-mark" style="left:65%"></div>
+        </div>
+        <div class="zones">
+          <span class="z"><b>Real voice</b>0&ndash;35</span>
+          <span class="z"><b>Not sure</b>35&ndash;65</span>
+          <span class="z"><b>AI / cloned</b>65&ndash;100</span>
+        </div>
+      </div>
+
+      <div class="callout" id="v-callout" hidden></div>
+
+      <div>
+        <div class="chart-label">AI-likeness through the clip</div>
+        <div class="chart-wrap"><div id="v-chart"></div></div>
+        <div class="chart-cap" id="v-cap"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MIC ============ -->
+  <section class="card panel" id="panel-mic" role="tabpanel" aria-labelledby="tab-mic" hidden>
+    <div class="verdict" id="m-verdict">
+      <span class="verdict-icon" id="m-icon">&middot;</span>
+      <div>
+        <div class="verdict-headline" id="m-headline">Not listening yet</div>
+        <div class="verdict-sub" id="m-sub">press start and allow microphone access</div>
+      </div>
+    </div>
+
+    <div style="margin-top:1.1rem">
+      <div class="meter" id="m-meter">
+        <div class="meter-fill" id="m-fill"></div>
+        <div class="meter-mark" style="left:35%"></div>
+        <div class="meter-mark" style="left:65%"></div>
+      </div>
+      <div class="zones">
+        <span class="z"><b>Real voice</b>0&ndash;35</span>
+        <span class="z"><b>Not sure</b>35&ndash;65</span>
+        <span class="z"><b>AI / cloned</b>65&ndash;100</span>
+      </div>
+    </div>
+
+    <div class="warmbar" id="m-warmbar" hidden><i id="m-warmfill"></i></div>
+
+    <div class="inbar-row" id="m-inbar" hidden>
+      <span class="inbar-label">your mic</span>
+      <div class="inbar"><i id="m-inlevel"></i></div>
+    </div>
+
+    <div>
+      <div class="chart-label" style="margin-top:1.1rem">AI-likeness over the last ~30 seconds</div>
+      <canvas id="spark" width="720" height="120" aria-hidden="true"></canvas>
+    </div>
+
+    <div class="mic-status" id="m-status">Not recording.</div>
+
+    <div class="dev-row" id="m-devrow" hidden>
+      <label for="m-device">Microphone:</label>
+      <select id="m-device"></select>
+    </div>
+
+    <button class="btn" id="m-btn">Start microphone</button>
+
+    <div class="hint">
+      <b>How to read this.</b> The bar and line show how <em>synthetic</em> the voice sounds.
+      When you speak, it should sit in the green &ldquo;real voice&rdquo; band. Play an
+      AI-generated or cloned-voice clip through your speakers and it climbs toward red.
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>Read the score as low / medium / high suspicion</strong>, not as an exact probability &mdash; it is a relative measure of how synthetic a voice sounds.</p>
+    <p>It is most reliable on voice-synthesis methods it has seen before. Brand-new deepfakes are harder, and improving that is what this project is working on. It needs about <span id="f-window">4&nbsp;seconds</span> of audio before the first solid reading.</p>
+    <p id="f-model" class="meta"></p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  let TH = { genuine: 0.35, synthetic: 0.65 };
+
+  const band = (r) => (r >= TH.synthetic ? "bad" : r <= TH.genuine ? "good" : "warn");
+
+  function verdictInfo(label, risk) {
+    const n = Math.round(risk * 100);
+    if (label === "SYNTHETIC")
+      return { cls: "bad", icon: "!", headline: "Sounds AI-generated or cloned",
+               sub: `AI-likeness ${n} / 100 — in the AI / cloned range` };
+    if (label === "GENUINE")
+      return { cls: "good", icon: "✓", headline: "Sounds like a real person",
+               sub: `AI-likeness ${n} / 100 — in the real-voice range` };
+    return { cls: "warn", icon: "?", headline: "Not sure — could be either",
+             sub: `AI-likeness ${n} / 100 — in the grey zone between` };
+  }
+
+  function applyVerdict(p, label, risk) {
+    const v = verdictInfo(label, risk);
+    $(p + "-verdict").className = "verdict " + v.cls;
+    $(p + "-icon").textContent = v.icon;
+    $(p + "-headline").textContent = v.headline;
+    $(p + "-sub").textContent = v.sub;
+    const f = $(p + "-fill");
+    f.className = "meter-fill " + band(risk);
+    f.style.width = Math.max(2, risk * 100) + "%";
+  }
+
+  function softVerdict(p, headline, sub) {
+    $(p + "-verdict").className = "verdict";
+    $(p + "-icon").textContent = "·";
+    $(p + "-headline").textContent = headline;
+    $(p + "-sub").textContent = sub || "";
+  }
+
+  /* ---------- model info badge ---------- */
+  async function loadInfo(tries = 0) {
+    try {
+      const r = await fetch("/api/info");
+      if (!r.ok) throw new Error();
+      const d = await r.json();
+      TH = { genuine: d.genuine_below, synthetic: d.synthetic_above };
+      const dev = /cuda|gpu/i.test(d.device || "") ? "GPU" : "CPU";
+      const eer = d.dev_eer != null ? `${(d.dev_eer * 100).toFixed(1)}% equal-error-rate on known methods. ` : "";
+      $("badge").classList.remove("loading");
+      $("badge").textContent = `AASIST model · ${dev}`;
+      $("badge").title = `AASIST, pretrained on ASVspoof 2019. ${eer}Running on ${d.device}.`;
+      $("f-window").textContent = Math.round(d.window_s) + " seconds";
+      $("f-model").textContent = `Model: AASIST (published, pretrained), running on the ${dev}. Audio is normalised to ${d.sample_rate / 1000} kHz before analysis.`;
+    } catch (e) {
+      if (tries < 20) return void setTimeout(() => loadInfo(tries + 1), 800);
+      $("badge").textContent = "model unavailable";
+    }
+  }
+  loadInfo();
+
+  /* ---------- tabs ---------- */
+  const tabs = [$("tab-file"), $("tab-mic")];
+  const panels = { "tab-file": $("panel-file"), "tab-mic": $("panel-mic") };
+  tabs.forEach((t) => t.addEventListener("click", () => {
+    tabs.forEach((x) => x.setAttribute("aria-selected", String(x === t)));
+    Object.entries(panels).forEach(([id, p]) => (p.hidden = id !== t.id));
+    if (t.id === "tab-mic") { sizeSpark(); drawSpark(); }
+    else stopMic();
+  }));
+
+  /* ---------- file scoring ---------- */
+  const drop = $("drop"), fileInput = $("file"), fstatus = $("file-status");
+
+  drop.addEventListener("click", () => fileInput.click());
+  drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } });
+  ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) scoreFile(f); });
+  fileInput.addEventListener("change", () => { if (fileInput.files[0]) scoreFile(fileInput.files[0]); });
+
+  function setStatus(msg, kind) {
+    fstatus.hidden = false;
+    fstatus.className = "status-line" + (kind === "err" ? " err" : "");
+    fstatus.innerHTML = (kind === "busy" ? '<span class="spinner"></span>' : "") + msg;
+  }
+
+  async function scoreFile(file) {
+    $("result").hidden = true;
+    setStatus(`Analyzing <b>${file.name}</b>&hellip;`, "busy");
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const r = await fetch("/api/score", { method: "POST", body: fd });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.detail || "scoring failed");
+      fstatus.hidden = true;
+      renderResult(d);
+    } catch (e) {
+      setStatus(String(e.message || e), "err");
+    }
+  }
+
+  function renderResult(d) {
+    $("result").hidden = false;
+    applyVerdict("v", d.label, d.risk);
+
+    const co = $("v-callout");
+    if (d.first_high_s != null && d.n_windows > 1) {
+      co.hidden = false;
+      co.textContent = `The voice first crossed into the “AI / cloned” range about ${d.first_high_s.toFixed(1)} seconds in.`;
+    } else co.hidden = true;
+
+    const win = Math.round(d.window_s);
+    $("v-cap").textContent = d.n_windows === 1
+      ? `This ${d.duration_s.toFixed(1)}-second clip is shorter than the ${win}-second window the model needs, so it is a single combined reading. Higher = more synthetic.`
+      : `Each point is one ${win}-second listen across the ${d.duration_s.toFixed(1)}-second clip. Higher = more synthetic; the shaded bands are the three ranges shown above.`;
+    $("v-chart").innerHTML = timelineSVG(d);
+  }
+
+  /* ---------- timeline SVG ---------- */
+  function timelineSVG(d) {
+    const W = 720, H = 240, m = { l: 38, r: 16, t: 16, b: 28 };
+    const pw = W - m.l - m.r, ph = H - m.t - m.b;
+    const dur = Math.max(d.duration_s, d.window_s);
+    const X = (t) => m.l + (dur ? (t / dur) * pw : 0);
+    const Y = (r) => m.t + (1 - r) * ph;
+    const css = getComputedStyle(document.body);
+    const c = (v) => css.getPropertyValue(v).trim() || "#888";
+    const ink3 = c("--ink-3"), accent = c("--accent");
+
+    const bands = [
+      [0, TH.genuine, c("--good")],
+      [TH.genuine, TH.synthetic, c("--warn")],
+      [TH.synthetic, 1, c("--bad")],
+    ].map(([a, b, col]) =>
+      `<rect x="${m.l}" y="${Y(b)}" width="${pw}" height="${Y(a) - Y(b)}" fill="${col}" opacity="0.09"/>`
+    ).join("");
+
+    const yticks = [0, TH.genuine, TH.synthetic, 1].map((r) =>
+      `<line x1="${m.l}" y1="${Y(r)}" x2="${W - m.r}" y2="${Y(r)}" stroke="${ink3}" stroke-width="1" opacity="0.25" ${r === TH.genuine || r === TH.synthetic ? 'stroke-dasharray="3 3"' : ""}/>` +
+      `<text x="${m.l - 6}" y="${Y(r) + 3}" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" fill="${ink3}">${Math.round(r * 100)}</text>`
+    ).join("");
+
+    const bandLabels = [
+      [(1 + TH.synthetic) / 2, "AI / cloned", c("--bad")],
+      [(TH.genuine + TH.synthetic) / 2, "not sure", c("--warn")],
+      [TH.genuine / 2, "real voice", c("--good")],
+    ].map(([r, txt, col]) =>
+      `<text x="${m.l + 6}" y="${Y(r) + 3}" font-family="IBM Plex Mono, monospace" font-size="9" fill="${col}" opacity="0.8">${txt}</text>`
+    ).join("");
+
+    const step = dur > 24 ? 5 : dur > 10 ? 2 : 1;
+    let xticks = "";
+    for (let t = 0; t <= dur + 0.001; t += step) {
+      xticks += `<text x="${X(t)}" y="${H - 8}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="${ink3}">${t % 1 ? t.toFixed(1) : t}s</text>`;
+    }
+
+    const times = d.window_times, sm = d.smoothed, raw = d.window_risks;
+    let line = "", area = "", pts = "";
+    if (times.length === 1) {
+      const cx = X(dur / 2), cy = Y(sm[0]);
+      line = `<line x1="${m.l}" y1="${cy}" x2="${W - m.r}" y2="${cy}" stroke="${accent}" stroke-width="2"/>`;
+      pts = `<circle cx="${cx}" cy="${cy}" r="4" fill="${accent}"/>`;
+    } else {
+      const P = times.map((t, i) => `${X(t)},${Y(sm[i])}`);
+      line = `<polyline points="${P.join(" ")}" fill="none" stroke="${accent}" stroke-width="2" stroke-linejoin="round"/>`;
+      area = `<polygon points="${X(times[0])},${Y(0)} ${P.join(" ")} ${X(times[times.length - 1])},${Y(0)}" fill="${accent}" opacity="0.13"/>`;
+      pts = times.map((t, i) => `<circle cx="${X(t)}" cy="${Y(raw[i])}" r="2.4" fill="${c("--ink-2")}" opacity="0.75"/>`).join("");
+    }
+
+    let hi = "";
+    if (d.first_high_s != null && times.length > 1 && d.first_high_s <= dur) {
+      hi = `<line x1="${X(d.first_high_s)}" y1="${m.t}" x2="${X(d.first_high_s)}" y2="${m.t + ph}" stroke="${c("--bad")}" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+    }
+
+    return `<svg class="timeline" viewBox="0 0 ${W} ${H}" role="img" aria-label="AI-likeness over time">
+      ${bands}${yticks}${bandLabels}${xticks}${area}${hi}${line}${pts}
+    </svg>`;
+  }
+
+  /* ---------- live microphone ---------- */
+  let ac = null, micStream = null, micProc = null, ws = null, micState = "idle";
+  let history = [], warmDur = 4, silentTicks = 0, micLabel = "microphone", selectedDeviceId = "";
+  const btn = $("m-btn"), mstatus = $("m-status"), devSel = $("m-device");
+
+  btn.addEventListener("click", () => (micState === "idle" ? startMic() : stopMic()));
+  devSel.addEventListener("change", () => {
+    selectedDeviceId = devSel.value;
+    if (micState !== "idle") { stopMic(); startMic(); }
+  });
+
+  async function populateDevices() {
+    try {
+      const ins = (await navigator.mediaDevices.enumerateDevices())
+        .filter((d) => d.kind === "audioinput" && d.deviceId && d.deviceId !== "default");
+      if (ins.length < 2) return;
+      const sig = ins.map((d) => d.deviceId).join("|");
+      if (devSel.dataset.sig !== sig) {
+        devSel.innerHTML = ins
+          .map((d, i) => `<option value="${d.deviceId}">${(d.label || "Microphone " + (i + 1)).replace(/["<>]/g, "")}</option>`)
+          .join("");
+        devSel.dataset.sig = sig;
+      }
+      if (selectedDeviceId && ins.some((d) => d.deviceId === selectedDeviceId)) devSel.value = selectedDeviceId;
+      $("m-devrow").hidden = false;
+    } catch (e) { /* ignore */ }
+  }
+
+  function setMicStatus(msg, kind) {
+    mstatus.className = "mic-status" + (kind === "err" ? " err" : "");
+    mstatus.innerHTML = msg;
+  }
+
+
+  async function startMic() {
+    let stream;
+    try {
+      // Browser defaults (auto-gain on) — most reliable across machines/mics.
+      const audio = selectedDeviceId ? { deviceId: { exact: selectedDeviceId } } : true;
+      stream = await navigator.mediaDevices.getUserMedia({ audio });
+    } catch (e) {
+      const name = (e && e.name) || "";
+      softVerdict("m", "Can't use the microphone", "");
+      setMicStatus(
+        name === "NotAllowedError"
+          ? "Microphone blocked. Click the camera/mic icon in the address bar and allow it, then press Start."
+          : name === "NotFoundError"
+          ? "No microphone was found on this device."
+          : "Could not open the microphone — it may be in use by another app.",
+        "err",
+      );
+      return;
+    }
+
+    const track = stream.getAudioTracks()[0];
+    micLabel = (track && track.label) ? track.label.replace(/\s*\([0-9a-f:]+\)\s*$/i, "") : "microphone";
+    if (!track || track.readyState !== "live") {
+      stream.getTracks().forEach((t) => t.stop());
+      softVerdict("m", "Can't use the microphone", "");
+      setMicStatus("The microphone did not start. Close other apps or tabs using it and press Start again.", "err");
+      return;
+    }
+    track.onmute = () => { if (micState !== "idle") setMicStatus(`&ldquo;${micLabel}&rdquo; was muted — another app or tab may have taken it`, "err"); };
+    if (!selectedDeviceId) {
+      try { const s = track.getSettings && track.getSettings(); if (s && s.deviceId) selectedDeviceId = s.deviceId; } catch (e) { /* ignore */ }
+    }
+    populateDevices();  // labels are readable now that permission is granted
+
+    micStream = stream;
+    micState = "starting";
+    history = [];
+    silentTicks = 0;
+    btn.textContent = "Stop";
+    btn.classList.add("stop");
+    softVerdict("m", "Starting…", "connecting to the microphone");
+    $("m-fill").style.width = "0";
+    $("m-inbar").hidden = false;
+
+    // Native sample rate: forcing 16 kHz here makes Chrome feed a hardware mic
+    // through silently on many machines. Capture native, resample on the server.
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    try { await ac.resume(); } catch (e) {}
+    if (ac.state !== "running") {
+      setMicStatus("Audio is paused by the browser — click anywhere on the page, then press Start again.", "err");
+      stopMic();
+      return;
+    }
+    const src = ac.createMediaStreamSource(stream);
+    const proc = ac.createScriptProcessor(4096, 1, 1);
+    const mute = ac.createGain();
+    mute.gain.value = 0;
+    micProc = proc;
+
+    let acc = [], accLen = 0;
+    proc.onaudioprocess = (e) => {
+      const dch = e.inputBuffer.getChannelData(0);
+      acc.push(new Float32Array(dch));
+      accLen += dch.length;
+      if (accLen >= 4096 && ws && ws.readyState === 1) {
+        const out = new Float32Array(accLen);
+        let o = 0;
+        for (const a of acc) { out.set(a, o); o += a.length; }
+        acc = []; accLen = 0;
+        ws.send(out.buffer);
+      }
+    };
+    src.connect(proc); proc.connect(mute); mute.connect(ac.destination);
+
+    ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/api/stream`);
+    ws.binaryType = "arraybuffer";
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ sampleRate: ac.sampleRate }));
+      micState = "live";
+      softVerdict("m", "Listening…", "collecting the first few seconds of audio");
+      setMicStatus('<span class="live-dot warm"></span> starting up&hellip;');
+    };
+    ws.onmessage = (ev) => {
+      const m = JSON.parse(ev.data);
+      if (m.error) { setMicStatus("Server error: " + m.error, "err"); stopMic(); return; }
+      onReading(m);
+    };
+    ws.onclose = () => { if (micState === "live") stopMic(); };
+    ws.onerror = () => { setMicStatus("Connection lost.", "err"); };
+  }
+
+  function stopMic() {
+    if (micState === "idle") return;
+    micState = "idle";
+    try { ws && ws.close(); } catch (e) {}
+    try { micProc && (micProc.onaudioprocess = null, micProc.disconnect()); } catch (e) {}
+    try { micStream && micStream.getTracks().forEach((t) => t.stop()); } catch (e) {}
+    try { ac && ac.close(); } catch (e) {}
+    ws = micProc = micStream = ac = null;
+    btn.textContent = "Start microphone";
+    btn.classList.remove("stop");
+    $("m-warmbar").hidden = true;
+    $("m-inbar").hidden = true;
+    $("m-inlevel").style.width = "0";
+    $("m-fill").style.width = "0";
+    softVerdict("m", "Not listening yet", "press start and allow microphone access");
+    setMicStatus("Stopped.");
+    drawSpark();
+  }
+
+  function onReading(m) {
+    warmDur = m.window_s || 4;
+    const winS = Math.round(warmDur);
+
+    const lvl = m.level ?? 0;
+    // perceptual-ish bar; stays visible for genuinely quiet speech
+    $("m-inlevel").style.width = Math.min(100, Math.sqrt(lvl) * 160) + "%";
+    $("m-inlevel").classList.toggle("silent", lvl < 0.004);
+    silentTicks = lvl < 0.002 ? silentTicks + 1 : 0;  // ~-54 dB = effectively digital silence
+
+    if (silentTicks >= 6) {
+      $("m-warmbar").hidden = true;
+      softVerdict("m", "No sound is coming in", `nothing is reaching &ldquo;${micLabel}&rdquo;`);
+      setMicStatus(
+        `<span class="live-dot warm"></span> close other apps/tabs using the mic, check Windows mic settings, then press Stop and Start`,
+        "err",
+      );
+    } else if (m.warming) {
+      softVerdict("m", "Listening…", `building up the first ${winS} seconds of audio`);
+      $("m-fill").className = "meter-fill " + band(m.risk);
+      $("m-fill").style.width = Math.max(2, m.risk * 100) + "%";
+      $("m-warmbar").hidden = false;
+      $("m-warmfill").style.width = Math.min(100, (m.filled_s / warmDur) * 100) + "%";
+      setMicStatus(`<span class="live-dot warm"></span> getting the first ${winS}s of sound&hellip; (${m.filled_s.toFixed(1)}s)`);
+    } else {
+      applyVerdict("m", m.label, m.risk);
+      $("m-warmbar").hidden = true;
+      setMicStatus(`<span class="live-dot"></span> listening live via &ldquo;${micLabel}&rdquo;`);
+    }
+
+    history.push(m.risk);
+    if (history.length > 180) history.shift();
+    drawSpark();
+  }
+
+  /* ---------- rolling sparkline ---------- */
+  const spark = $("spark"), sctx = spark.getContext("2d");
+  function sizeSpark() {
+    const r = window.devicePixelRatio || 1;
+    const w = spark.clientWidth || 720, h = spark.clientHeight || 120;
+    spark.width = w * r; spark.height = h * r;
+    sctx.setTransform(r, 0, 0, r, 0, 0);
+  }
+  window.addEventListener("resize", () => { sizeSpark(); drawSpark(); });
+  sizeSpark();
+  drawSpark();
+
+  function drawSpark() {
+    const css = getComputedStyle(document.body);
+    const c = (v) => css.getPropertyValue(v).trim() || "#888";
+    const w = spark.clientWidth || 720, h = spark.clientHeight || 120;
+    sctx.clearRect(0, 0, w, h);
+    const Y = (r) => (1 - r) * (h - 8) + 4;
+
+    sctx.font = '10px "IBM Plex Mono", monospace';
+    sctx.textAlign = "left";
+    [[TH.genuine, c("--good"), "real voice", 12], [TH.synthetic, c("--bad"), "AI / cloned", -4]].forEach(([r, col, txt, dy]) => {
+      sctx.strokeStyle = col; sctx.globalAlpha = 0.35; sctx.setLineDash([3, 3]); sctx.lineWidth = 1;
+      sctx.beginPath(); sctx.moveTo(0, Y(r)); sctx.lineTo(w, Y(r)); sctx.stroke();
+      sctx.setLineDash([]); sctx.globalAlpha = 0.8; sctx.fillStyle = col;
+      sctx.fillText(txt, 4, Y(r) + dy);
+    });
+    sctx.globalAlpha = 1;
+    if (history.length < 2) {
+      sctx.fillStyle = c("--ink-3");
+      sctx.font = '12px "IBM Plex Mono", monospace';
+      sctx.textAlign = "center";
+      sctx.fillText(micState === "idle" ? "the line appears here once you start" : "listening…", w / 2, h / 2);
+      sctx.textAlign = "left";
+      return;
+    }
+
+    const n = history.length, dx = w / Math.max(n - 1, 1);
+    const last = history[n - 1];
+    const col = last >= TH.synthetic ? c("--bad") : last <= TH.genuine ? c("--good") : c("--warn");
+
+    sctx.beginPath();
+    sctx.moveTo(0, h);
+    history.forEach((r, i) => sctx.lineTo(i * dx, Y(r)));
+    sctx.lineTo((n - 1) * dx, h);
+    sctx.closePath();
+    sctx.fillStyle = col; sctx.globalAlpha = 0.14; sctx.fill();
+
+    sctx.globalAlpha = 1; sctx.strokeStyle = col; sctx.lineWidth = 2; sctx.lineJoin = "round";
+    sctx.beginPath();
+    history.forEach((r, i) => (i ? sctx.lineTo(i * dx, Y(r)) : sctx.moveTo(0, Y(r))));
+    sctx.stroke();
+
+    sctx.fillStyle = col;
+    sctx.beginPath(); sctx.arc((n - 1) * dx, Y(last), 3, 0, 7); sctx.fill();
+  }
+
+  window.addEventListener("beforeunload", stopMic);
+})();
+</script>
+</body>
+</html>

@@ -139,14 +139,22 @@ class CMScorer:
         return self.score_waveform(load_wave(path, self.sr), **kw)
 
 
-def build_scorer(model_name: str = "aasist", *, pretrained: bool = True, device=None) -> CMScorer:
+def build_scorer(
+    model_name: str = "aasist", *, pretrained: bool = True, device=None, weights: str | None = None
+) -> CMScorer:
     cfg = load_config()
     pcfg = preprocess_config(cfg)
     device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = build_cm(model_name).to(device)
 
     models_dir = resolve(cfg, "results").parent / "models"
-    if pretrained:
+    if weights:
+        # a specific backbone .pth under models/pretrained/ (e.g. a fine-tune)
+        wpath = models_dir / "pretrained" / weights
+        model.backbone.load_state_dict(torch.load(wpath, map_location=device))
+        tag = f"{model_name} ({Path(weights).stem})"
+        calib_path = wpath.with_suffix("").with_name(f"{wpath.stem}_demo_calib.json")
+    elif pretrained:
         name_map = {"aasist": "AASIST.pth", "aasist-l": "AASIST-L.pth"}
         if model_name not in name_map:
             raise ValueError(f"--pretrained not available for {model_name}")
