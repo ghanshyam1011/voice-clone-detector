@@ -33,6 +33,15 @@ weak-but-partly-independent signals and keeps a human in the loop.
 
 ## 2. What has been done
 
+![VoiceGuard multi-signal decision pipeline](docs/architecture.svg)
+
+> One anti-shortcut front-end feeds four weak, partly-independent signals
+> (§2.2). `voiceguard.risk` fuses the signals that are present and a policy
+> table turns the fused score into **ALLOW / VERIFY / ESCALATE** with reason
+> codes (§2.3). Every decision is written to a feature-only audit log and shown
+> in the operator console; a human acknowledges and acts. The subsections below
+> take each stage in turn.
+
 ### 2.1 A trustworthy evaluation harness (the core methodological contribution)
 
 The ASVspoof 2019 LA corpus contains a **silence-duration / loudness artifact**:
