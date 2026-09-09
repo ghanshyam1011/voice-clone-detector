@@ -35,6 +35,10 @@ weak-but-partly-independent signals and keeps a human in the loop.
 
 ![VoiceGuard multi-signal decision pipeline](docs/architecture.svg)
 
+<sub>Figure style adapted from the pipeline diagram in Sun et al.,
+[*AI-Synthesized Voice Detection Using Neural Vocoder Artifacts*](https://arxiv.org/abs/2304.13085)
+(CVPRW 2023). The architecture shown is VoiceGuard's own.</sub>
+
 > One anti-shortcut front-end feeds four weak, partly-independent signals
 > (§2.2). `voiceguard.risk` fuses the signals that are present and a policy
 > table turns the fused score into **ALLOW / VERIFY / ESCALATE** with reason

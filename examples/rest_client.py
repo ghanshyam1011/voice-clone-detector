@@ -24,6 +24,11 @@ def _post(path: str, **kw):
 
 
 def main() -> None:
+    # Windows consoles default to cp1252; reason codes carry non-Latin-1 glyphs (e.g. the rupee sign).
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
     if len(sys.argv) != 4:
         sys.exit("usage: rest_client.py <enrol.wav> <benign.wav> <cloned.wav>")
     enrol, benign, cloned = sys.argv[1:4]
