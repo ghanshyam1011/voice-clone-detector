@@ -20,3 +20,13 @@ them for reference; do not treat their numbers as real — see
 
 Real analysis notebooks added later go in a `notebooks/analysis/` subfolder
 and cite a `front_end` fingerprint like everything else.
+
+## `kaggle_train_cm.ipynb` — a different kind of notebook
+
+Not exploratory and not an analysis of results (there are no results yet
+to fingerprint) -- it's an **operational runner**: clone the repo, install,
+locate and link an attached ASVspoof 2019 LA dataset, build manifests,
+smoke-test, then run `scripts/train_cm.py` for real, all inside a Kaggle
+GPU session. See [`docs/training_runbook.md`](../docs/training_runbook.md)
+for the reasoning behind training AASIST before SSL-AASIST, and for the
+non-notebook version of these same steps.

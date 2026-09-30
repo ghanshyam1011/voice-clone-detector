@@ -11,6 +11,12 @@ a transaction — with a privacy-preserving design and Indian-language support.
 This repository takes the position that **no single acoustic detector generalises
 to unseen speech synthesis**, and builds around that fact rather than against it.
 
+**New to this repo?** [`GETTING_STARTED.md`](GETTING_STARTED.md) walks through
+getting it running on your own machine from a fresh clone — installing
+libraries, downloading the dataset, running the live demo, and (optionally)
+training — with every command spelled out. Everything below is the
+research-oriented account of the work.
+
 ---
 
 ## 1. Motivation
@@ -78,7 +84,7 @@ in-domain number and the honest cross-dataset number side by side.
 | Signal | Implementation | Standalone performance |
 |---|---|---|
 | **Synthetic-voice** | AASIST (vendored `clovaai/aasist`), published weights, run through the front-end | dev (known) **9.6%** · eval (unknown) **23.3%** · In-the-Wild **35.8%** EER |
-| **Speaker consistency** | WavLM x-vector (`microsoft/wavlm-base-plus-sv`), per-session enrolment, cosine similarity → mismatch risk | same-speaker cosine ≈ 0.95+ on ≥ 6 s enrolment; operating point tuned, not calibrated |
+| **Speaker consistency** | WavLM x-vector (`microsoft/wavlm-base-plus-sv`), per-session enrolment, cosine similarity → mismatch risk | same-speaker cosine ≈ 0.95+ on ≥ 6 s enrolment; Platt-calibrated, held-out speakers ECE 0.389→0.181 |
 | **Prosody / behaviour** | Praat/Parselmouth features (F0 stats, jitter, shimmer, HNR, pause ratio, energy flux) + logistic regression on ASVspoof-train | **26.3%** dev EER — weak by design, a contributing signal |
 | **Call context** | rules over caller-known / transfer amount / prior flags / channel | deterministic |
 
@@ -106,7 +112,10 @@ RawBoost + telephony-codec augmentation; a resumable training loop
   single-page **operator console** (`/`): decision banner, fused-risk timeline,
   four signal meters, reason codes, editable call context, a simulated alert +
   acknowledge, and the live audit trail. `examples/rest_client.py` drives the
-  whole flow headless.
+  whole flow headless. The same session API is also reachable over **gRPC**
+  (`voiceguard.serve.grpc_service`, `scripts/serve_grpc.py`,
+  `examples/grpc_client.py`) — one decision engine, two transports; see
+  [`docs/grpc.md`](docs/grpc.md).
 
 ### 2.4 Per-language evaluation (IndicCall-Eval, pilot)
 
@@ -152,6 +161,21 @@ seed 42, trained on `asvspoof19_la_train`.
   (44–52%) — unfamiliar neural vocoders. Full breakdown in
   `results/tables/cm_aasist-pretrained_in_domain.csv`.
 
+**min-tDCF** (the ASVspoof community's own deployment-oriented metric — a
+countermeasure scored in tandem with a fixed ASV system under an explicit
+cost model, using the organizers' reference implementation and their
+baseline ASV system's scores; 0 = perfect, 1 = no better than no
+countermeasure at all — see [`docs/tdcf.md`](docs/tdcf.md)):
+
+| System | dev min-tDCF | eval min-tDCF |
+|---|--:|--:|
+| **AASIST, published weights, our front-end** | 0.288 | **0.588** |
+
+Same story as EER, from a different, independently-computed metric: usable
+on known attacks, collapses on unseen ones. ASVspoof 2021 DF, a second
+held-out cross-dataset test, is *not* built — the corpus needs a
+registration step we haven't done yet (see `docs/tdcf.md`).
+
 **The system-level result:** a modern TTS clip the acoustic model rates "real"
 (risk 29/100) still reaches **ESCALATE** when the speaker-consistency check
 (clone ≠ enrolled customer) and the call-context rules fire. That is the thesis,
@@ -178,6 +202,7 @@ python scripts/build_manifests.py      # manifests = the single source of truth
 python scripts/train_baseline.py       # Gen-1 baseline
 python scripts/run_eval.py             # baseline_*.csv (incl. the silence gate)
 python scripts/eval_cm.py --model aasist --pretrained   # AASIST through the front-end
+python scripts/eval_tdcf.py --model aasist --pretrained # cm_*_tdcf.csv (needs the LA asv_scores/ files)
 python scripts/train_prosody.py        # models/prosody/prosody_lr.joblib (tracked, 2 KB)
 ```
 
@@ -189,6 +214,14 @@ python scripts/pick_demo_clips.py      # demo_audio/{enrol,benign,cloned}.wav fr
 python scripts/serve_demo.py           # http://127.0.0.1:8000  (console) + /detector
 ```
 
+**Same session, over gRPC instead** ([`docs/grpc.md`](docs/grpc.md)):
+
+```bash
+pip install -e ".[dl,serve,prosody,grpc]"
+python scripts/serve_grpc.py           # 127.0.0.1:50051, in a second terminal
+python examples/grpc_client.py demo_audio/enrol.wav demo_audio/benign.wav demo_audio/cloned_1.wav
+```
+
 **Per-language pilot:**
 
 ```bash
@@ -197,8 +230,9 @@ python scripts/make_indic_spoof.py --per-lang 40
 python scripts/eval_indic.py           # results/tables/indic_eval.csv
 ```
 
-68 unit tests (`pytest -q`) — metrics, front-end, manifests, models, speaker,
-prosody, risk fusion, audit, the session API.
+103 unit tests (`pytest -q`) — metrics, front-end, manifests, models, speaker,
+prosody, risk fusion, audit, the session API (REST and gRPC), VAD,
+calibration, min-tDCF.
 
 ---
 
@@ -207,18 +241,40 @@ prosody, risk fusion, audit, the session API.
 - **The detector is not ours and not good enough.** All model numbers use
   published AASIST weights. 35.8% In-the-Wild EER is not deployable. Full
   training does not fit the development laptop (≈ 50 min/epoch, 30–40 epochs
-  needed); it is set up to run on a Kaggle T4.
-- **No probability calibration.** The risk score is a logit-shift of an
-  over-confident softmax; speaker / prosody / context contribute via tuned
-  operating points, not calibration on held-out data.
-- **Latency.** The acoustic model needs a 4.04 s window; the "first read within
-  2 s" requirement needs a VAD gate and a lightweight first-pass model (not
-  built).
+  needed); it is set up to run on a Kaggle T4 — see
+  [`docs/training_runbook.md`](docs/training_runbook.md) for the concrete
+  setup and why AASIST, not SSL-AASIST, should be trained first.
+- **Calibration measured, not assumed — and it only held up for one signal
+  of three.** Speaker consistency ships a Platt calibrator verified to
+  generalize to held-out speakers (ECE 0.389→0.181). Spoof and prosody
+  calibrators were fit and measured the same way, and *made things worse*
+  on unseen attacks / cross-dataset audio, so neither ships; both stay on
+  their pre-existing ad-hoc operating points. See
+  [`docs/calibration.md`](docs/calibration.md).
+- **Latency.** The acoustic model still needs a 4.04 s window for a
+  *confirmed* read — not built shorter. What is built: speech-onset VAD
+  (latency measured from when the caller starts talking, not call-connect)
+  and safety-capped provisional reads (a short/tiled-window score is marked
+  `provisional` and capped at VERIFY, never a silent ESCALATE, until a full
+  window confirms it). See [`docs/latency.md`](docs/latency.md).
 - **Alerts are simulated** in the console; no real SMS/email/webhook sink.
 - **IndicCall-Eval** has the synthetic side and the harness; the consented
   real-speech slice is pending.
-- **Not started:** gRPC + SDK, on-device/edge inference, MUSAN/RIR augmentation,
-  ASVspoof 2021 DF as a second eval set, min t-DCF, a model card.
+- **gRPC + SDK** now ships (`voiceguard.serve.grpc_service`,
+  `examples/grpc_client.py`) alongside REST/WS — same `SessionManager`,
+  verified to produce identical decisions on the same clip. See
+  [`docs/grpc.md`](docs/grpc.md).
+- **Model card** now ships at
+  [`models/pretrained/MODEL_CARD.md`](models/pretrained/MODEL_CARD.md).
+  It documents a real gap while doing so: **this repository has no
+  top-level LICENSE file yet** — the vendored AASIST/RawBoost code carries
+  its own upstream terms, but this project's own code doesn't declare one.
+  Not a decision this pass makes unilaterally.
+- **Not started:** on-device/edge inference, MUSAN/RIR augmentation,
+  ASVspoof 2021 DF as a second eval set (see [`docs/tdcf.md`](docs/tdcf.md)),
+  real alert delivery (SMS/email/webhook — the console panel is simulated),
+  auth/TLS hardening for the REST and gRPC servers (both currently bind to
+  localhost only, by design, not yet a gap being closed).
 
 Roadmap and phase status: [`docs/project_status.md`](docs/project_status.md).
 
@@ -228,25 +284,37 @@ Roadmap and phase status: [`docs/project_status.md`](docs/project_status.md).
 
 ```
 src/voiceguard/
-  audio/       anti-shortcut front-end (load, trim, loudness, codec) + augmentation
+  audio/       anti-shortcut front-end (load, trim, loudness, codec) + augmentation;
+               speech-onset VAD (vad.py)
   data/        manifest build + load (repo-relative, portable)
   features/    handcrafted 61-dim features (Gen-1 baseline only)
   models/      baseline GBM; RawNet2 / AASIST / AASIST-L / SSL-AASIST (vendored refs)
-  eval/        EER / DET metrics (unit-tested), provenance stamping, harness
+  eval/        EER / DET metrics, calibration (ECE/Brier/Platt/isotonic), min-tDCF
+               (reference impl vendored in _vendor/), provenance stamping, harness
   detect/      windowed CMScorer + EMA risk timeline
-  speaker/     WavLM x-vector enrolment + per-session consistency check
+  speaker/     WavLM x-vector enrolment + per-session consistency check (calibrated)
   prosody/     Praat features + logistic-regression scorer
   risk/        signal fusion + policy engine (ALLOW / VERIFY / ESCALATE)
   audit.py     feature-only audit log
-  serve/       session REST/WS API + operator console (FastAPI, localhost only)
+  serve/       session REST/WS API + operator console (FastAPI, localhost only);
+               grpc_service.py + proto/ for the gRPC transport (same SessionManager)
 config/        default.yaml — the only place any path is written
+examples/      rest_client.py + grpc_client.py — same flow, two transports
+notebooks/     kaggle_train_cm.ipynb — runnable Kaggle trainer (item c); 00-05 are
+               pre-P0 exploration, superseded, kept for reference only (see its README)
 scripts/       build_manifests, train_baseline, train_cm, train_prosody, run_eval,
                eval_cm, eval_indic, make_indic_spoof, make_modern_spoof,
-               finetune_modern, pick_demo_clips, prep_demo_call, serve_demo, demo*
+               finetune_modern, pick_demo_clips, prep_demo_call, serve_demo, serve_grpc,
+               demo*, calibrate_cm, calibrate_prosody, calibrate_speaker, eval_tdcf
 docs/          evaluation_protocol.md (frozen), baseline_results.md, project_status.md,
-               demo_runbook.md, indic_eval.md, initial-review.md
+               demo_runbook.md, indic_eval.md, initial-review.md, calibration.md,
+               latency.md, tdcf.md, grpc.md, training_runbook.md
+models/        pretrained/ (+ MODEL_CARD.md) + prosody/ + speaker/ weights and
+               calibrators, committed; everything else under models/ (training
+               checkpoints) is gitignored
+paper/         IEEE-style writeup (tex/pdf/docx) + slide deck
 results/tables/ every metric, provenance-stamped, committed
-tests/         68 unit tests
+tests/         103 unit tests
 ```
 
 Vendored reference implementations (`src/voiceguard/models/_vendor/`) retain their
