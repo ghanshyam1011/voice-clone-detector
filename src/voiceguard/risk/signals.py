@@ -21,6 +21,10 @@ class Signal:
     value: float | None
     weight: float
     detail: str = ""  # short phrase for the reason list, e.g. "similarity 0.41 vs enrolled"
+    provisional: bool = False  # still building confidence (e.g. window not full yet) --
+    # see risk/policy.py: a provisional signal can push toward VERIFY but never
+    # unilaterally ESCALATE, so a fast-but-uncertain first read can't pause a
+    # real transaction on its own.
 
     @property
     def available(self) -> bool:

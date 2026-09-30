@@ -59,4 +59,11 @@ def decide(fused: FusedRisk, scenario: str, context_reasons: list[str] | None = 
     if fused.note:
         reasons.append(fused.note)
 
+    if action == "ESCALATE" and fused.has_provisional:
+        # a read still built partly from a not-yet-full audio window can raise
+        # concern (VERIFY) but must never pause a real transaction on its own --
+        # it upgrades to ESCALATE automatically once the read is confirmed.
+        action = "VERIFY"
+        reasons.append("Early read — escalation available once the read is confirmed")
+
     return Decision(action, score, scenario, reasons, _RECOMMENDATION[action])

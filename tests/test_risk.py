@@ -4,8 +4,8 @@ from voiceguard.risk import CallContext, Signal, decide, fuse
 from voiceguard.risk.fusion import DEFAULT_WEIGHTS
 
 
-def _sig(name, value, detail=""):
-    return Signal(name, name.title(), value, DEFAULT_WEIGHTS[name], detail)
+def _sig(name, value, detail="", provisional=False):
+    return Signal(name, name.title(), value, DEFAULT_WEIGHTS[name], detail, provisional)
 
 
 def test_absent_signals_are_dropped_and_weights_renormalise():
@@ -56,6 +56,40 @@ def test_reason_codes_include_elevated_signals_and_context():
     assert "Spoof" in joined and "Speaker" in joined
     assert "Caller number not recognised" in joined
     assert d.recommendation
+
+
+def test_provisional_signal_caps_escalate_to_verify():
+    # this would ESCALATE (score 0.8 >= 0.75) if the spoof read were confirmed
+    confirmed = fuse([_sig("spoof", 0.8)])
+    assert decide(confirmed, "routine").action == "ESCALATE"
+
+    # the same score, but the window wasn't full yet -> capped at VERIFY, not
+    # silently dropped -- a fast-but-uncertain read still surfaces concern
+    early = fuse([_sig("spoof", 0.8, provisional=True)])
+    assert early.has_provisional is True
+    d = decide(early, "routine")
+    assert d.action == "VERIFY"
+    assert any("confirm" in r.lower() for r in d.reasons)
+
+
+def test_provisional_does_not_change_allow_or_verify_outcomes():
+    # provisional only ever caps DOWN from ESCALATE; a score that was never
+    # going to escalate is unaffected
+    low = fuse([_sig("spoof", 0.2, provisional=True)])
+    assert decide(low, "routine").action == "ALLOW"
+
+    mid = fuse([_sig("spoof", 0.6, provisional=True)])  # routine: warn 0.55, esc 0.75
+    assert decide(mid, "routine").action == "VERIFY"
+
+
+def test_has_provisional_reflects_only_present_signals():
+    # an absent (None) signal marked provisional doesn't count -- only
+    # present signals matter
+    f = fuse([_sig("spoof", 0.5), _sig("speaker", None, provisional=True)])
+    assert f.has_provisional is False
+
+    f2 = fuse([_sig("spoof", 0.5, provisional=True), _sig("speaker", 0.1)])
+    assert f2.has_provisional is True
 
 
 def test_context_rules():

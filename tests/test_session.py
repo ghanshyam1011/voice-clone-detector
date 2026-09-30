@@ -84,6 +84,40 @@ def test_session_lifecycle_and_audit(client, tmp_path):
 
 
 @needs_weights
+def test_short_clip_is_provisional_long_clip_is_not(client):
+    sid = client.post("/api/session", json={"scenario": "transaction"}).json()["session_id"]
+
+    short = client.post(
+        f"/api/session/{sid}/analyze",
+        files={"file": ("short.wav", _wav(1.0, seed=7), "audio/wav")},
+    ).json()
+    assert short["provisional"] is True
+    # a still-building read can flag VERIFY but must never unilaterally ESCALATE
+    assert short["action"] != "ESCALATE"
+
+    long = client.post(
+        f"/api/session/{sid}/analyze",
+        files={"file": ("long.wav", _wav(6.0, seed=7), "audio/wav")},
+    ).json()
+    assert long["provisional"] is False
+
+
+@needs_weights
+def test_speech_onset_and_first_read_latency_reported(client):
+    sid = client.post("/api/session", json={"scenario": "routine"}).json()["session_id"]
+    a = client.post(
+        f"/api/session/{sid}/analyze",
+        files={"file": ("call.wav", _wav(6.0, seed=3), "audio/wav")},
+    ).json()
+    # the synthetic clip has no leading silence, so onset should land near t=0
+    assert a["speech_onset_s"] is not None
+    assert 0.0 <= a["speech_onset_s"] < 0.5
+    # a full (non-provisional) clip confirms immediately
+    assert a["first_confirmed_read_s"] is not None
+    assert a["first_confirmed_read_s"] >= 0.0
+
+
+@needs_weights
 def test_analyze_unknown_session_404(client):
     r = client.post(
         "/api/session/nope/analyze", files={"file": ("x.wav", _wav(3.0), "audio/wav")}

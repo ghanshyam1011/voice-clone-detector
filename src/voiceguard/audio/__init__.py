@@ -14,6 +14,7 @@ from voiceguard.audio.preprocess import (
     preprocess_wave,
     trim_silence,
 )
+from voiceguard.audio.vad import speech_onset_s
 
 __all__ = [
     "load_wave",
@@ -22,4 +23,5 @@ __all__ = [
     "preprocess_file",
     "trim_silence",
     "normalize_loudness",
+    "speech_onset_s",
 ]

@@ -65,6 +65,11 @@
     font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--ink-3);
     text-transform:uppercase; letter-spacing:.1em; margin:1.4rem 0 .5rem;
   }
+  .latency-line{
+    font-size:.8rem; color:var(--ink-3); margin:.5rem 0 0 .1rem;
+  }
+  .latency-line b{color:var(--ink-2); font-weight:600}
+  .latency-line.provisional{color:#a16207}
 
   /* ---- decision banner ---- */
   .decision{
@@ -226,6 +231,7 @@
     </div>
     <div class="decision-score"><b id="dec-score">&mdash;</b><span>risk / 100</span></div>
   </div>
+  <div class="latency-line" id="latency-line" hidden></div>
 
   <div class="cols">
     <!-- LEFT: signals -->
@@ -611,6 +617,7 @@
     $("dec-rec").textContent = d.recommendation || "";
     $("dec-score").textContent = pctInt(d.fused);
     updateAlert(act, d);
+    renderLatency(d);
 
     setSig("spoof", d.spoof);
     setSig("speaker", d.speaker);
@@ -627,6 +634,18 @@
 
     drawSpark();
     if (d.audit_event) prependAudit(d.audit_event);
+  }
+  function renderLatency(d) {
+    const el = $("latency-line");
+    if (d.speech_onset_s == null) { el.hidden = true; return; }
+    el.hidden = false;
+    if (d.first_confirmed_read_s != null) {
+      el.className = "latency-line";
+      el.innerHTML = `Confirmed read <b>${d.first_confirmed_read_s.toFixed(1)}s</b> after the caller started talking.`;
+    } else {
+      el.className = "latency-line provisional";
+      el.innerHTML = `Early read in progress — confirming over the next few seconds. No escalation until confirmed.`;
+    }
   }
   const RANK = { ALLOW: 0, VERIFY: 1, ESCALATE: 2 };
   function updateAlert(act, d) {

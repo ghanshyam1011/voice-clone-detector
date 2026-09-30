@@ -29,6 +29,9 @@ class FusedRisk:
     score: float
     signals: list[Signal] = field(default_factory=list)
     note: str = ""
+    has_provisional: bool = False  # true if any present signal is still building
+    # confidence (see Signal.provisional) -- policy.decide() reads this to cap
+    # the action at VERIFY instead of ESCALATE.
 
     @property
     def present(self) -> list[Signal]:
@@ -49,4 +52,5 @@ def fuse(signals: list[Signal]) -> FusedRisk:
         score = _ALARM_FLOOR
         note = f"{loudest.label} alone is high enough to act on"
 
-    return FusedRisk(round(min(1.0, score), 4), signals, note)
+    has_provisional = any(s.provisional for s in present)
+    return FusedRisk(round(min(1.0, score), 4), signals, note, has_provisional)
