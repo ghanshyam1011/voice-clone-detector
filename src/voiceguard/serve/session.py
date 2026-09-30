@@ -19,7 +19,9 @@ from dataclasses import asdict, dataclass, field
 
 import numpy as np
 
+from voiceguard.audio import speech_onset_s
 from voiceguard.audit import AuditLog
+from voiceguard.config import REPO_ROOT
 from voiceguard.risk import CallContext, Signal, decide, fuse
 from voiceguard.risk.fusion import DEFAULT_WEIGHTS, FusedRisk
 from voiceguard.speaker import SpeakerVerifier
@@ -47,6 +49,9 @@ class Session:
     last_signals: dict = field(default_factory=dict)  # {"spoof":.., "speaker":.., ...}
     last_fused: float = 0.0
     last_reasons: list = field(default_factory=list)
+    speech_onset_s: float | None = None  # when the caller first started talking,
+    # relative to the session's own audio clock -- None until VAD finds it
+    first_confirmed_read_s: float | None = None  # latency: onset -> first non-provisional read
 
     def touch(self) -> None:
         self.last_seen = time.time()
@@ -155,6 +160,9 @@ class SessionManager:
         s.touch()
         wave = np.asarray(wave, dtype=np.float32).reshape(-1)
 
+        if s.speech_onset_s is None:
+            s.speech_onset_s = speech_onset_s(wave, self.sr)
+
         prosody_r = None
         prosody_detail = ""
         with self._lock:
@@ -190,7 +198,7 @@ class SessionManager:
         signals = [
             Signal(
                 "spoof", "Synthetic voice", spoof_risk, DEFAULT_WEIGHTS["spoof"],
-                f"score {spoof_risk:.2f}",
+                f"score {spoof_risk:.2f}", provisional=warming,
             ),
             Signal("speaker", "Speaker mismatch", spk_risk, DEFAULT_WEIGHTS["speaker"], spk.detail),
             Signal(
@@ -215,7 +223,13 @@ class SessionManager:
             # discrete clip analysis — no smoothing across separate clips
             s.fused_ema = instant.score
             smoothed = round(instant.score, 4)
-        d = decide(FusedRisk(smoothed, signals, instant.note), s.scenario, ctx_reasons)
+        d = decide(
+            FusedRisk(smoothed, signals, instant.note, instant.has_provisional),
+            s.scenario,
+            ctx_reasons,
+        )
+        if not warming and s.first_confirmed_read_s is None and s.speech_onset_s is not None:
+            s.first_confirmed_read_s = round(len(wave) / self.sr - s.speech_onset_s, 3)
 
         sig_map = {
             "spoof": spoof_risk,
@@ -260,5 +274,43 @@ class SessionManager:
             },
             "level": level,
             "warming": warming,
+            "provisional": instant.has_provisional,
+            "speech_onset_s": s.speech_onset_s,
+            "first_confirmed_read_s": s.first_confirmed_read_s,
             "audit_event": audit_event,
         }
+
+
+def build_session_stack(
+    model_name: str = "aasist", *, pretrained: bool = True, weights: str | None = None
+) -> SessionManager:
+    """Build the scorer + speaker verifier + prosody + audit log +
+    SessionManager stack. The one place this wiring happens -- every
+    transport (REST/WS in :mod:`voiceguard.serve.app`, gRPC in
+    :mod:`voiceguard.serve.grpc_service`) calls this and gets the identical
+    decision engine, so "same engine, different transport" is actually true
+    of the code, not just asserted."""
+    from voiceguard.detect import NB_SAMP, build_scorer
+
+    src = weights or "upstream"
+    print(f"[voiceguard.serve] loading {model_name} ({src}) ...", flush=True)
+    scorer = build_scorer(model_name, pretrained=pretrained, weights=weights)
+    print(f"[voiceguard.serve] ready -- {scorer.name} on {scorer.device}", flush=True)
+
+    verifier = SpeakerVerifier()  # WavLM model lazy-loads on first enrol / score
+    audit = AuditLog(
+        REPO_ROOT / "logs" / "session_audit.jsonl",
+        model=scorer.name,
+        front_end=scorer.pcfg.fingerprint(),
+    )
+    prosody = None
+    try:
+        from voiceguard.prosody import ProsodyScorer
+
+        prosody = ProsodyScorer()
+        prosody.warm()
+        print("[voiceguard.serve] prosody branch active", flush=True)
+    except Exception as exc:  # noqa: BLE001 -- optional: needs [prosody] + the trained model
+        print(f"[voiceguard.serve] prosody branch off ({exc})", flush=True)
+
+    return SessionManager(scorer, verifier, audit, sr=scorer.sr, nb_samp=NB_SAMP, prosody=prosody)

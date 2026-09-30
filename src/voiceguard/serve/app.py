@@ -23,12 +23,9 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from voiceguard.audit import AuditLog
-from voiceguard.config import REPO_ROOT
-from voiceguard.detect import NB_SAMP, build_scorer
+from voiceguard.detect import NB_SAMP
 from voiceguard.detect.scorer import _classify  # keep verdict banding in one place
-from voiceguard.serve.session import SessionManager
-from voiceguard.speaker import SpeakerVerifier
+from voiceguard.serve.session import build_session_stack
 
 _STATIC = Path(__file__).parent / "static"
 _MAX_BYTES = 30 * 1024 * 1024
@@ -91,12 +88,10 @@ def _verdict_payload(v, duration_s: float, window_s: float) -> dict:
 def create_app(
     model_name: str = "aasist", *, pretrained: bool = True, weights: str | None = None
 ) -> FastAPI:
-    src = weights or "upstream"
-    print(f"[voiceguard.serve] loading {model_name} ({src}) ...", flush=True)
-    scorer = build_scorer(model_name, pretrained=pretrained, weights=weights)
+    sessions = build_session_stack(model_name, pretrained=pretrained, weights=weights)
+    scorer = sessions.scorer
     window_s = NB_SAMP / scorer.sr
     lock = threading.Lock()  # serialise model access across the upload + socket handlers
-    print(f"[voiceguard.serve] ready -- {scorer.name} on {scorer.device}", flush=True)
 
     def _score_windows(w: np.ndarray) -> np.ndarray:
         with lock:
@@ -105,25 +100,6 @@ def create_app(
     def _score_waveform(y: np.ndarray, hop_s: float):
         with lock:
             return scorer.score_waveform(y, hop_s=hop_s)
-
-    verifier = SpeakerVerifier()  # WavLM model lazy-loads on first enrol / score
-    audit = AuditLog(
-        REPO_ROOT / "logs" / "session_audit.jsonl",
-        model=scorer.name,
-        front_end=scorer.pcfg.fingerprint(),
-    )
-    prosody = None
-    try:
-        from voiceguard.prosody import ProsodyScorer
-
-        prosody = ProsodyScorer()
-        prosody.warm()
-        print("[voiceguard.serve] prosody branch active", flush=True)
-    except Exception as exc:  # noqa: BLE001 -- optional: needs [prosody] + the trained model
-        print(f"[voiceguard.serve] prosody branch off ({exc})", flush=True)
-    sessions = SessionManager(
-        scorer, verifier, audit, sr=scorer.sr, nb_samp=NB_SAMP, prosody=prosody
-    )
 
     app = FastAPI(title="VoiceGuard demo", docs_url=None, redoc_url=None)
 
@@ -285,8 +261,15 @@ def create_app(
         if dur < _MIN_SECONDS:
             raise HTTPException(400, "Clip too short.")
         v = await loop.run_in_executor(None, _score_waveform, y, float(np.clip(hop, 0.25, 5.0)))
+        # a clip shorter than the model's fixed window was tiled/repeated to score it
+        # (see CMScorer.score_waveform) -- flag it provisional so a short upload can't
+        # unilaterally ESCALATE off a read built from repeated, not real, audio.
+        short_clip = len(y) < NB_SAMP
         out = await loop.run_in_executor(
-            None, partial(sessions.assess, sid, y, spoof_risk=float(v.risk), ema=False)
+            None,
+            partial(
+                sessions.assess, sid, y, spoof_risk=float(v.risk), ema=False, warming=short_clip
+            ),
         )
         out["clip"] = _verdict_payload(v, dur, window_s)
         return JSONResponse(out)
@@ -300,7 +283,7 @@ def create_app(
     @app.get("/api/session/{sid}/audit")
     def session_audit(sid: str):
         _session_or_404(sid)
-        return {"events": audit.read(sid)}
+        return {"events": sessions.audit.read(sid)}
 
     @app.websocket("/api/session/{sid}/stream")
     async def session_stream(ws: WebSocket, sid: str) -> None:

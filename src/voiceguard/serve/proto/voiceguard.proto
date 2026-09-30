@@ -1,0 +1,137 @@
+// VoiceGuard session API, mirrored 1:1 from the REST/WS surface in
+// voiceguard.serve.app / voiceguard.serve.session.SessionManager. Both
+// transports call the same SessionManager -- this file only describes how
+// to reach it over gRPC. See docs/grpc.md.
+syntax = "proto3";
+
+package voiceguard.v1;
+
+service VoiceGuard {
+  // POST /api/session
+  rpc CreateSession(CreateSessionRequest) returns (SessionState);
+  // POST /api/session/{sid}/context
+  rpc UpdateContext(UpdateContextRequest) returns (ContextState);
+  // POST /api/session/{sid}/enroll
+  rpc Enroll(EnrollRequest) returns (EnrollResponse);
+  // POST /api/session/{sid}/analyze -- one clip in, one assessment out
+  rpc Analyze(AnalyzeRequest) returns (Assessment);
+  // POST /api/session/{sid}/acknowledge
+  rpc Acknowledge(AcknowledgeRequest) returns (AcknowledgeResponse);
+  // GET /api/session/{sid}/audit
+  rpc GetAudit(GetAuditRequest) returns (AuditTrail);
+  // WS /api/session/{sid}/stream -- client streams raw PCM chunks, server
+  // streams back one Assessment per hop (~0.5s of new audio), same as the
+  // WebSocket path.
+  rpc StreamAudio(stream AudioChunk) returns (stream Assessment);
+}
+
+message ContextState {
+  bool caller_known = 1;
+  double amount = 2;
+  string channel = 3;
+  int32 prior_flags = 4;
+}
+
+message CreateSessionRequest {
+  string scenario = 1;      // "routine" | "transaction" | "privileged"; "" = "routine"
+  // unset (not just false) means "use the server default (true)", matching
+  // the REST route's `body.get("caller_known", True)" -- plain `bool` can't
+  // represent that distinction, so this one field needs `optional` even
+  // though it is never read piecemeal like UpdateContextRequest's fields.
+  optional bool caller_known = 2;
+  double amount = 3;
+  string channel = 4;       // e.g. "pstn"; "" = "pstn"
+}
+
+message SessionState {
+  string session_id = 1;
+  string scenario = 2;
+  ContextState context = 3;
+}
+
+message UpdateContextRequest {
+  string session_id = 1;
+  optional string scenario = 2;
+  optional bool caller_known = 3;
+  optional double amount = 4;
+  optional string channel = 5;
+  optional int32 prior_flags = 6;
+}
+
+message EnrollRequest {
+  string session_id = 1;
+  bytes audio = 2;          // raw file bytes, same container formats sf.read/librosa accept
+  string filename = 3;      // extension hint for exotic containers, mirrors UploadFile.filename
+}
+
+message EnrollResponse {
+  bool enrolled = 1;
+  double seconds = 2;
+  bool short = 3;            // enrolment shorter than the recommended 4s
+}
+
+message AnalyzeRequest {
+  string session_id = 1;
+  bytes audio = 2;
+  string filename = 3;
+  double hop = 4;             // seconds; 0 = server default (1.0)
+}
+
+message AcknowledgeRequest {
+  string session_id = 1;
+  string by = 2;              // defaults to "agent" if empty
+}
+
+message AuditEvent {
+  string event_id = 1;
+  string utc = 2;
+  string session_id = 3;
+  string action = 4;
+  double fused = 5;
+  map<string, double> signals = 6;
+  repeated string reasons = 7;
+  string scenario = 8;
+  string model = 9;          // provenance: model name (see docs/evaluation_protocol.md)
+  string front_end = 10;     // provenance: preprocessing fingerprint
+  string git_commit = 11;    // provenance: commit the event was produced under
+}
+
+message AcknowledgeResponse {
+  bool acknowledged = 1;
+  AuditEvent audit_event = 2;
+}
+
+message GetAuditRequest {
+  string session_id = 1;
+}
+
+message AuditTrail {
+  repeated AuditEvent events = 1;
+}
+
+message AudioChunk {
+  string session_id = 1;      // required on every message (streams are stateless per-message)
+  bytes pcm_f32le = 2;        // mono float32, little-endian, raw samples (no WAV header)
+  int32 sample_rate = 3;      // 0 = unchanged from the stream's last known rate
+}
+
+message Assessment {
+  optional double spoof = 1;
+  optional double speaker = 2;
+  optional double prosody = 3;
+  double context = 4;
+  double similarity = 5;
+  bool enrolled = 6;
+  double fused = 7;
+  string action = 8;
+  string scenario = 9;
+  repeated string reasons = 10;
+  string recommendation = 11;
+  ContextState context_state = 12;
+  double level = 13;
+  bool warming = 14;
+  bool provisional = 15;
+  optional double speech_onset_s = 16;
+  optional double first_confirmed_read_s = 17;
+  AuditEvent audit_event = 18;   // set only on the hop where the action changed
+}
