@@ -40,6 +40,7 @@ class ProsodyScorer:
         self.model_path = Path(model_path)
         self._pipe = None
         self._medians = None
+        self._calibrator = None
 
     @property
     def ready(self) -> bool:
@@ -57,6 +58,11 @@ class ProsodyScorer:
         blob = joblib.load(self.model_path)
         self._pipe = blob["pipeline"]
         self._medians = np.asarray(blob["feature_medians"], dtype=np.float32)
+        self._calibrator = None
+        if blob.get("calibrator"):
+            from voiceguard.eval import Calibrator
+
+            self._calibrator = Calibrator.from_dict(blob["calibrator"])
 
     def warm(self) -> None:
         self._ensure()
@@ -67,7 +73,10 @@ class ProsodyScorer:
     def risk_from_features(self, feats: np.ndarray) -> float:
         self._ensure()
         x = self._impute(np.asarray(feats, dtype=np.float32)).reshape(1, -1)
-        return float(self._pipe.predict_proba(x)[0, 1])  # column 1 = spoof
+        raw = float(self._pipe.predict_proba(x)[0, 1])  # column 1 = spoof
+        if self._calibrator is not None:
+            return float(self._calibrator.apply(raw)[0])
+        return raw
 
     def score_file(self, path, sr: int = 16000) -> ProsodyResult:
         from voiceguard.audio import load_wave

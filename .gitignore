@@ -60,6 +60,7 @@ demo_audio/
 /models/*
 !/models/pretrained/
 !/models/prosody/
+!/models/speaker/
 # ...the small fixed upstream reference weights (clovaai/aasist)
 /models/pretrained/*
 !/models/pretrained/*.pth
@@ -67,6 +68,9 @@ demo_audio/
 # ...the tiny prosody logistic-regression (a few KB), NOT its scratch files
 /models/prosody/*
 !/models/prosody/*.joblib
+# ...the tiny fitted speaker-calibration mapping (two floats), see docs/calibration.md
+/models/speaker/*
+!/models/speaker/*.json
 baselines/artifacts/
 results/**/*.pkl
 results/wav2vec2_finetuned/

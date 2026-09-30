@@ -1,0 +1,8 @@
+{
+  "calibrator": {
+    "method": "platt",
+    "coef": 8.296254044171578,
+    "intercept": -0.5773177048433704
+  },
+  "method": "platt"
+}

@@ -32,6 +32,30 @@ def test_calibration_spreads_the_scores():
 
     sc = build_scorer("aasist", pretrained=True)
     # raw AASIST pins P(synthetic) near 1.0; a value at the operating point
-    # must calibrate to roughly 0.5, not stay pinned high
+    # must calibrate to roughly 0.5, not stay pinned high (true whether this
+    # is the ad-hoc logit-shift or a fitted calibrator -- both are anchored
+    # near the model's own EER operating point by construction)
     cal = sc._calibrate_risk(np.array([sc.operating_point]))[0]
     assert 0.3 < cal < 0.7
+
+
+@needs_weights
+def test_fitted_calibrator_loads_when_present():
+    import json
+    from pathlib import Path
+
+    from voiceguard.detect import build_scorer
+
+    sc = build_scorer("aasist", pretrained=True)
+    calib_path = (
+        Path(__file__).resolve().parents[1] / "models" / "pretrained" / "aasist_demo_calib.json"
+    )
+    has_fitted = False
+    if calib_path.exists():
+        has_fitted = bool(json.loads(calib_path.read_text()).get("calibrator"))
+    assert (sc.calibrator is not None) == has_fitted
+    if sc.calibrator is not None:
+        # monotonic: a higher raw P(synthetic) must never calibrate to a lower risk
+        lo = sc._calibrate_risk(np.array([0.01]))[0]
+        hi = sc._calibrate_risk(np.array([0.99]))[0]
+        assert hi >= lo

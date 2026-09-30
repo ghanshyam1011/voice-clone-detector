@@ -67,6 +67,10 @@ class CMScorer:
         # raw P(synthetic) at the model's EER operating point; 0.999 == "uncalibrated"
         self.operating_point: float = 0.5
         self.dev_eer: float | None = None
+        # a fitted Platt/isotonic mapping (scripts/calibrate_cm.py), or None to fall
+        # back to the ad-hoc logit-shift below. Set by build_scorer() when the
+        # model's calibration JSON has one.
+        self.calibrator = None
 
     @torch.no_grad()
     def _raw_synth(self, windows: np.ndarray) -> np.ndarray:
@@ -74,9 +78,17 @@ class CMScorer:
         return 1.0 - self.model.score_bonafide(x).float().cpu().numpy()
 
     def _calibrate_risk(self, raw_synth: np.ndarray) -> np.ndarray:
-        """Map raw P(synthetic) so the operating point sits at 0.5 with spread.
-        AASIST's softmax pins everything near 1.0; the ranking is good but the
-        magnitude isn't -- this is a logit shift, not real calibration (P3)."""
+        """Map raw P(synthetic) to a risk score.
+
+        With a fitted calibrator (scripts/calibrate_cm.py, Platt or isotonic
+        on held-out ASVspoof dev), this is real calibration: the mapping was
+        chosen to minimise calibration error against labels, not guessed.
+        Without one, falls back to the older ad-hoc logit shift -- AASIST's
+        softmax pins everything near 1.0, so *some* spread is needed even
+        before a proper fit exists, but centring only at the EER operating
+        point with a hand-picked temperature is not calibration."""
+        if self.calibrator is not None:
+            return self.calibrator.apply(_logit(raw_synth))
         shifted = (_logit(raw_synth) - _logit(self.operating_point)) / _CALIB_TEMPERATURE
         return _sigmoid(shifted)
 
@@ -172,6 +184,10 @@ def build_scorer(
     if calib_path.exists():
         c = json.loads(calib_path.read_text())
         scorer.operating_point, scorer.dev_eer = c["operating_point"], c.get("dev_eer")
+        if c.get("calibrator"):
+            from voiceguard.eval import Calibrator
+
+            scorer.calibrator = Calibrator.from_dict(c["calibrator"])
     else:
         print("calibrating on a dev sample (one-time, ~20s)...", flush=True)
         scorer.calibrate()

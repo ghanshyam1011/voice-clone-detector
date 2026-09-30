@@ -9,6 +9,7 @@ import pytest
 
 from voiceguard.speaker import SpeakerEmbedder, SpeakerVerifier
 from voiceguard.speaker.embed import cosine
+from voiceguard.speaker.verify import _CALIB_PATH
 
 
 def _voiceish(seed: int, secs: float = 3.0, sr: int = 16000) -> np.ndarray:
@@ -57,3 +58,17 @@ def test_score_before_enrol_is_unavailable(embedder):
     v = SpeakerVerifier(embedder)
     r = v.score("nope", _voiceish(1))
     assert r.enrolled is False and r.risk is None
+
+
+def test_calib_path_none_disables_calibration(embedder):
+    v = SpeakerVerifier(embedder, calib_path=None)
+    assert v.calibrator is None
+
+
+@pytest.mark.skipif(not _CALIB_PATH.exists(), reason="run scripts/calibrate_speaker.py first")
+def test_default_verifier_loads_the_fitted_calibrator(embedder):
+    v = SpeakerVerifier(embedder)
+    assert v.calibrator is not None
+    # a mismatch (low similarity) must still read as high risk post-calibration
+    assert v._risk(0.1) > 0.5
+    assert v._risk(0.99) < 0.5

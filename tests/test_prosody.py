@@ -50,3 +50,13 @@ def test_scorer_risk_in_range():
 def test_scorer_unavailable_on_silence():
     r = ProsodyScorer().score(np.zeros(16000, dtype=np.float32))
     assert r.available is False and r.risk is None
+
+
+@needs_model
+def test_calibrator_loads_when_present():
+    import joblib
+
+    sc = ProsodyScorer()
+    sc.warm()
+    has_calibrator = bool(joblib.load(DEFAULT_MODEL_PATH).get("calibrator"))
+    assert (sc._calibrator is not None) == has_calibrator

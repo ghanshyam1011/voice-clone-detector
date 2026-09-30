@@ -10,15 +10,19 @@ point, not calibrated — tune them against the actual demo clips.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 
+from voiceguard.config import REPO_ROOT
 from voiceguard.speaker.embed import SAMPLE_RATE, SpeakerEmbedder, cosine
 
-_MATCH_SIM = 0.88  # cosine >= this  -> risk ~0
-_MISMATCH_SIM = 0.55  # cosine <= this  -> risk ~1
+_MATCH_SIM = 0.88  # cosine >= this  -> risk ~0 -- fallback when no fitted calibrator exists
+_MISMATCH_SIM = 0.55  # cosine <= this  -> risk ~1 -- ditto
 _MIN_SCORE_SECONDS = 2.5  # shorter than this -> embedding is unreliable, report unavailable
+_CALIB_PATH = REPO_ROOT / "models" / "speaker" / "speaker_calibration.json"
 
 
 @dataclass
@@ -44,11 +48,20 @@ class SpeakerVerifier:
         *,
         match_sim: float = _MATCH_SIM,
         mismatch_sim: float = _MISMATCH_SIM,
+        calib_path: str | Path | None = _CALIB_PATH,
     ):
         self.embedder = embedder or SpeakerEmbedder()
         self.match_sim = match_sim
         self.mismatch_sim = mismatch_sim
         self._enrolled: dict[str, np.ndarray] = {}  # session_id -> mean embedding
+        # scripts/calibrate_speaker.py fits this on speaker-disjoint ASVspoof trials;
+        # falls back to the match_sim/mismatch_sim linear interpolation if absent.
+        self.calibrator = None
+        if calib_path and Path(calib_path).exists():
+            from voiceguard.eval import Calibrator
+
+            blob = json.loads(Path(calib_path).read_text())
+            self.calibrator = Calibrator.from_dict(blob["calibrator"])
 
     # -- enrolment ---------------------------------------------------
     def enroll(self, session_id: str, wave: np.ndarray) -> None:
@@ -66,6 +79,8 @@ class SpeakerVerifier:
 
     # -- scoring ---------------------------------------------------
     def _risk(self, sim: float) -> float:
+        if self.calibrator is not None:
+            return float(self.calibrator.apply(1.0 - sim)[0])
         span = self.match_sim - self.mismatch_sim
         return float(np.clip((self.match_sim - sim) / span, 0.0, 1.0))
 
