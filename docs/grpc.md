@@ -49,6 +49,25 @@ python examples/grpc_client.py enrol.wav benign.wav cloned.wav
 the same clips and diff the output if you want to see the parity for
 yourself.
 
+## What the audio was: `quality`, and the `WAITING` action
+
+Every `Assessment` (and the REST/WS JSON) carries an `InputQuality` report, produced by
+the input gate that runs before any model sees the audio (`docs/input_quality.md`):
+`usable`, `status` (`ok | no_audio | no_speech | too_short`), a plain-English `reason`,
+`speech_s`, `level_dbfs`, `clipped_frac`, `method` (`silero | energy`) and `notes` (every
+fix applied: DC offset removed, int16 rescaled, NaN replaced, quiet audio raised).
+
+`action` is one of `ALLOW | VERIFY | ESCALATE | WAITING`. **`WAITING` means "no verdict:
+nothing usable to judge"** (silence, noise, under a second of speech) -- it is not a
+clearance and not an alarm: nothing is logged, no model scores are returned (`spoof`,
+`speaker` stay unset), and the call context alone still counts (an unknown caller asking
+for a large transfer yields VERIFY with the reason "judged on context alone").
+
+`Enroll` refuses a clip with under 3 s of clear speech (`INVALID_ARGUMENT`; REST 422) and
+reports `speech_seconds`. In `StreamAudio`, a chunk may end mid-sample (the odd bytes are
+carried into the next chunk), NaN/Inf become silence, and an absurd `sample_rate` is
+ignored, so a malformed client cannot kill the stream.
+
 ## Provenance is carried over too
 
 `AuditEvent` (the gRPC message) has the same `model` / `front_end` /

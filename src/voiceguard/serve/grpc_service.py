@@ -16,17 +16,17 @@ from functools import partial
 
 import grpc
 import numpy as np
-import soxr
 
+from voiceguard.audio.quality import stream_rate
 from voiceguard.serve.app import _decode
 from voiceguard.serve.proto import voiceguard_pb2 as pb
 from voiceguard.serve.proto import voiceguard_pb2_grpc as pb_grpc
-from voiceguard.serve.session import SessionManager, build_session_stack
+from voiceguard.serve.session import LIVE_BUFFER_S, LiveBuffer, SessionManager, build_session_stack
 
 _MAX_BYTES = 30 * 1024 * 1024
 _MAX_SECONDS = 150.0
 _MIN_SECONDS = 0.2
-_SESSION_BUF_S = 12.0  # rolling audio kept per streaming session, matches app.py
+_SESSION_BUF_S = LIVE_BUFFER_S  # rolling audio kept per streaming session, matches app.py
 
 
 def _context_to_proto(ctx: dict) -> pb.ContextState:
@@ -79,6 +79,8 @@ def _assessment_to_proto(d: dict) -> pb.Assessment:
     audit_event = _audit_event_to_proto(d.get("audit_event"))
     if audit_event is not None:
         kw["audit_event"] = audit_event
+    if d.get("quality"):
+        kw["quality"] = pb.InputQuality(**d["quality"])
     return pb.Assessment(**kw)
 
 
@@ -151,18 +153,22 @@ class VoiceGuardServicer(pb_grpc.VoiceGuardServicer):
     async def Enroll(self, request, context):
         await _session_or_abort(self.sessions, request.session_id, context)
         loop = asyncio.get_event_loop()
-        y = await _decode_or_abort(
-            request.audio, request.filename, self.sessions.sr, context, loop
+        y = await _decode_or_abort(request.audio, request.filename, self.sessions.sr, context, loop)
+        try:
+            res = await loop.run_in_executor(None, self.sessions.enroll, request.session_id, y)
+        except ValueError as exc:  # decodes fine, but it is not clear speech
+            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(exc))
+        return pb.EnrollResponse(
+            enrolled=True,
+            seconds=round(res.seconds, 2),
+            short=res.short,
+            speech_seconds=round(res.speech_seconds, 2),
         )
-        secs = await loop.run_in_executor(None, self.sessions.enroll, request.session_id, y)
-        return pb.EnrollResponse(enrolled=True, seconds=round(secs, 2), short=secs < 4.0)
 
     async def Analyze(self, request, context):
         await _session_or_abort(self.sessions, request.session_id, context)
         loop = asyncio.get_event_loop()
-        y = await _decode_or_abort(
-            request.audio, request.filename, self.sessions.sr, context, loop
-        )
+        y = await _decode_or_abort(request.audio, request.filename, self.sessions.sr, context, loop)
         dur = len(y) / self.sessions.sr
         if dur < _MIN_SECONDS:
             await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "clip too short")
@@ -192,38 +198,66 @@ class VoiceGuardServicer(pb_grpc.VoiceGuardServicer):
         return pb.AuditTrail(events=[_audit_event_to_proto(e) for e in events])
 
     async def StreamAudio(self, request_iterator, context):
-        # Mirrors app.py's WS /api/session/{sid}/stream hop-by-hop: same
-        # rolling buffer, same hop size, same SessionManager.assess() call --
-        # only the transport differs.
+        # The same buffering as app.py's WS /api/session/{sid}/stream (``LiveBuffer``): a
+        # reader task takes audio as it arrives and the assessor always works on the NEWEST
+        # audio, so a slow assessment cannot leave a growing queue of stale audio behind it.
+        # Same rolling buffer, same hop, same SessionManager.assess() -- only the transport
+        # differs.
         loop = asyncio.get_event_loop()
-        sid: str | None = None
-        in_sr = self.sessions.sr
-        hop_samples = self.sessions.sr // 2
-        cap = int(_SESSION_BUF_S * self.sessions.sr)
-        buf = np.zeros(0, dtype=np.float32)
-        since = 0
-        async for chunk in request_iterator:
-            if sid is None:
-                sid = chunk.session_id
-                if await _session_or_abort(self.sessions, sid, context) is None:
+        live = LiveBuffer(self.sessions.sr)
+        wake, closed = asyncio.Event(), asyncio.Event()
+        sid: list[str | None] = [None]
+        unknown = False
+
+        async def reader() -> None:
+            nonlocal unknown
+            try:
+                async for chunk in request_iterator:
+                    if sid[0] is None:
+                        sid[0] = chunk.session_id
+                        if self.sessions.get(sid[0]) is None:
+                            unknown = True
+                            return
+                    if chunk.sample_rate:
+                        live.set_rate(stream_rate(chunk.sample_rate, live.in_sr))
+                    if live.feed(chunk.pcm_f32le):
+                        wake.set()
+            finally:
+                closed.set()
+                wake.set()
+
+        reader_task = asyncio.create_task(reader())
+        try:
+            while True:
+                await wake.wait()
+                wake.clear()
+                if unknown:
+                    await _session_or_abort(self.sessions, sid[0], context)
                     return
-            if chunk.sample_rate:
-                in_sr = chunk.sample_rate
-            pcm = np.frombuffer(chunk.pcm_f32le, dtype=np.float32)
-            if in_sr != self.sessions.sr and len(pcm):
-                pcm = soxr.resample(pcm, in_sr, self.sessions.sr).astype(np.float32)
-            buf = np.concatenate([buf, pcm])[-cap:]
-            since += len(pcm)
-            if since < hop_samples or len(buf) < self.sessions.sr // 2:
-                continue
-            since = 0
-            level = float(np.abs(buf[-self.sessions.sr :]).max())
-            warming = len(buf) < self.sessions.nb_samp
-            out = await loop.run_in_executor(
-                None,
-                partial(self.sessions.assess, sid, buf, level=round(level, 4), warming=warming),
-            )
-            yield _assessment_to_proto(out)
+                snap = live.snapshot()
+                if snap is None:
+                    if closed.is_set():
+                        return
+                    continue
+                buf, _ = snap
+                level = float(np.abs(buf[-self.sessions.sr :]).max())
+                out = await loop.run_in_executor(
+                    None,
+                    partial(
+                        self.sessions.assess,
+                        sid[0],
+                        buf,
+                        level=round(level, 4),
+                        warming=len(buf) < self.sessions.nb_samp,
+                    ),
+                )
+                yield _assessment_to_proto(out)
+                if closed.is_set():
+                    if live.since == 0:
+                        return  # the client is done and every sample has been assessed
+                    wake.set()  # audio landed after the last snapshot: one more pass
+        finally:
+            reader_task.cancel()
 
 
 async def serve(
@@ -233,8 +267,12 @@ async def serve(
     weights: str | None = None,
     host: str = "127.0.0.1",
     port: int = 50051,
+    prosody: bool | None = None,
 ) -> None:
-    sessions = build_session_stack(model_name, pretrained=pretrained, weights=weights)
+    sessions = build_session_stack(
+        model_name, pretrained=pretrained, weights=weights, prosody=prosody
+    )
+    print(f"[voiceguard.serve] warmed up in {sessions.warm():.1f} s", flush=True)
     server = grpc.aio.server(
         options=[
             ("grpc.max_receive_message_length", _MAX_BYTES),

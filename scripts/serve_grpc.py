@@ -32,6 +32,9 @@ def main() -> None:
         default=None,
         help="a .pth under models/pretrained/, e.g. AASIST_modern.pth (a fine-tune)",
     )
+    ap.add_argument(
+        "--prosody", action="store_true", help="also compute the (non-decision) prosody meter"
+    )
     args = ap.parse_args()
 
     from voiceguard.serve.grpc_service import serve
@@ -43,6 +46,7 @@ def main() -> None:
             weights=args.weights,
             host=args.host,
             port=args.port,
+            prosody=args.prosody or None,
         )
     )
 

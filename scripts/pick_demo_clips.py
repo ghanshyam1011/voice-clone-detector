@@ -78,12 +78,8 @@ def main() -> None:
     spoof = eval_df[eval_df.label == "spoof"]
     seed = cfg["seed"]
     # A08/A10/A16/A19 are among the strongest for AASIST; sample a short list first
-    prefer = spoof[spoof.attack_id.isin(["A10", "A08", "A16", "A19"])].sample(
-        30, random_state=seed
-    )
-    shortlist = [
-        r.path for r in prefer.itertuples(index=False) if _dur(r.path) >= 3.0
-    ][:20]
+    prefer = spoof[spoof.attack_id.isin(["A10", "A08", "A16", "A19"])].sample(30, random_state=seed)
+    shortlist = [r.path for r in prefer.itertuples(index=False) if _dur(r.path) >= 3.0][:20]
     print(f"scoring {len(shortlist)} synthetic candidates ...", flush=True)
 
     picked: list[tuple[str, float]] = []
@@ -99,7 +95,7 @@ def main() -> None:
     if not picked:  # scorer strict on this sample -- take the two loudest hits anyway
         scored = sorted(
             ((p, scorer.score_file(p).risk if scorer else float("nan")) for p in shortlist),
-            key=lambda kv: (kv[1] if kv[1] == kv[1] else 0),
+            key=lambda kv: kv[1] if kv[1] == kv[1] else 0,
             reverse=True,
         )
         picked = scored[:2]

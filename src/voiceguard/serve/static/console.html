@@ -3,204 +3,277 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VoiceGuard — Call Console</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<title>VoiceGuard — Is this really your customer?</title>
 <style>
   :root{
     color-scheme: light;
-    --bg:#eef1f1; --surface:#ffffff; --surface-2:#e2e7e8;
-    --ink:#15202a; --ink-2:#48575f; --ink-3:#6a7880; --rule:#d2d9db;
-    --accent:#0f6e80; --accent-ink:#0b5563;
-    --good:#2f7d4f; --warn:#a9711c; --bad:#b23c37;
-    --good-bg:#e4efe7; --warn-bg:#f3e8d4; --bad-bg:#f1dedc;
-    --shadow:0 1px 2px rgba(15,32,42,.05), 0 10px 30px -16px rgba(15,32,42,.22);
+    --bg:#f4f6f8; --card:#ffffff; --card-2:#eef1f5; --ink:#17202b; --ink-2:#4a5a6a; --ink-3:#6b7a89;
+    --line:#dde3ea; --accent:#2457d6; --accent-ink:#1b43a8; --accent-bg:#e8eefc;
+    --ok:#17794a; --ok-bg:#e2f3e9; --ok-line:#b5dec6;
+    --warn:#a35f00; --warn-bg:#fdf0d5; --warn-line:#efd08c;
+    --bad:#b3261e; --bad-bg:#fbe4e1; --bad-line:#f0b5af;
+    --idle:#5d6b79; --idle-bg:#e9edf1;
+    --shadow:0 1px 2px rgba(16,24,40,.05), 0 8px 24px -12px rgba(16,24,40,.18);
+    --radius:16px;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
       color-scheme: dark;
-      --bg:#0d1418; --surface:#141e23; --surface-2:#1d2a30;
-      --ink:#e7edef; --ink-2:#a1b0b7; --ink-3:#6d7f88; --rule:#293840;
-      --accent:#3fb0c4; --accent-ink:#79c9d6;
-      --good:#54b079; --warn:#d59a41; --bad:#db655c;
-      --good-bg:#16261d; --warn-bg:#2a2113; --bad-bg:#2c1917;
-      --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 32px -18px rgba(0,0,0,.7);
+      --bg:#0e1319; --card:#161d26; --card-2:#1d2631; --ink:#e8edf2; --ink-2:#aab6c2; --ink-3:#7f8d9b;
+      --line:#2a3541; --accent:#6c8fff; --accent-ink:#9db3ff; --accent-bg:#1b2745;
+      --ok:#4cc38a; --ok-bg:#12281e; --ok-line:#22533b;
+      --warn:#f0b04a; --warn-bg:#2d2412; --warn-line:#5d4720;
+      --bad:#ff7b72; --bad-bg:#2f1a19; --bad-line:#68302c;
+      --idle:#9aa7b4; --idle-bg:#1f2833;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
     }
   }
   :root[data-theme="dark"]{
     color-scheme: dark;
-    --bg:#0d1418; --surface:#141e23; --surface-2:#1d2a30;
-    --ink:#e7edef; --ink-2:#a1b0b7; --ink-3:#6d7f88; --rule:#293840;
-    --accent:#3fb0c4; --accent-ink:#79c9d6;
-    --good:#54b079; --warn:#d59a41; --bad:#db655c;
-    --good-bg:#16261d; --warn-bg:#2a2113; --bad-bg:#2c1917;
-    --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 32px -18px rgba(0,0,0,.7);
+    --bg:#0e1319; --card:#161d26; --card-2:#1d2631; --ink:#e8edf2; --ink-2:#aab6c2; --ink-3:#7f8d9b;
+    --line:#2a3541; --accent:#6c8fff; --accent-ink:#9db3ff; --accent-bg:#1b2745;
+    --ok:#4cc38a; --ok-bg:#12281e; --ok-line:#22533b;
+    --warn:#f0b04a; --warn-bg:#2d2412; --warn-line:#5d4720;
+    --bad:#ff7b72; --bad-bg:#2f1a19; --bad-line:#68302c;
+    --idle:#9aa7b4; --idle-bg:#1f2833;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -14px rgba(0,0,0,.7);
   }
   :root[data-theme="light"]{ color-scheme: light; }
 
-  *{box-sizing:border-box;margin:0}
+  *{box-sizing:border-box}
   [hidden]{display:none!important}
   body{
-    background:var(--bg); color:var(--ink); line-height:1.55;
-    font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-    border-top:3px solid var(--accent);
+    margin:0; background:var(--bg); color:var(--ink); line-height:1.5; font-size:16px;
+    font-family:"Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   }
-  .wrap{max-width:60rem; margin:0 auto; padding:clamp(1.25rem,.8rem+2vw,2.5rem) clamp(1rem,.5rem+2vw,2rem) 3rem}
+  h1,h2,h3,p{margin:0}
+  button,input,select{font:inherit; color:inherit}
   a{color:var(--accent-ink)}
+  svg.i{width:1.15em; height:1.15em; flex:none; fill:none; stroke:currentColor; stroke-width:2;
+        stroke-linecap:round; stroke-linejoin:round; vertical-align:-.18em}
+  svg.i.fill{fill:currentColor; stroke:none}
+  :focus-visible{outline:3px solid var(--accent); outline-offset:2px; border-radius:6px}
 
-  header{display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; flex-wrap:wrap}
-  .brand{display:flex; align-items:center; gap:.55rem}
-  .brand svg{width:22px;height:22px;color:var(--accent);flex:none}
-  .brand b{font-size:1.1rem;font-weight:600}
-  .brand .sub{font-size:.85rem;color:var(--ink-2)}
-  .badge{
-    font-family:"IBM Plex Mono",monospace; font-size:.7rem; color:var(--ink-2);
-    background:var(--surface); border:1px solid var(--rule); border-radius:6px;
-    padding:.4rem .6rem; text-align:right; white-space:nowrap;
-  }
-  .badge a{display:block; margin-top:.15rem; text-decoration:none; color:var(--ink-3)}
+  .wrap{max-width:74rem; margin:0 auto; padding:1.25rem clamp(1rem,3vw,2rem) 3rem}
 
-  .scenario-line{
-    font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--ink-3);
-    text-transform:uppercase; letter-spacing:.1em; margin:1.4rem 0 .5rem;
-  }
-  .latency-line{
-    font-size:.8rem; color:var(--ink-3); margin:.5rem 0 0 .1rem;
-  }
-  .latency-line b{color:var(--ink-2); font-weight:600}
-  .latency-line.provisional{color:#a16207}
-
-  /* ---- decision banner ---- */
-  .decision{
-    display:flex; gap:1rem; align-items:flex-start;
-    background:var(--surface-2); border:1px solid var(--rule);
-    border-radius:12px; padding:1.15rem 1.25rem; box-shadow:var(--shadow);
-  }
-  .decision.allow{background:var(--good-bg); border-color:color-mix(in srgb,var(--good) 34%,transparent)}
-  .decision.verify{background:var(--warn-bg); border-color:color-mix(in srgb,var(--warn) 34%,transparent)}
-  .decision.escalate{background:var(--bad-bg); border-color:color-mix(in srgb,var(--bad) 42%,transparent)}
-  .decision-icon{
-    flex:none; width:2.2rem; height:2.2rem; border-radius:50%; background:var(--surface);
-    display:grid; place-items:center; font-weight:700; font-size:1.2rem; color:var(--ink-3);
-  }
-  .decision.allow .decision-icon{color:var(--good)}
-  .decision.verify .decision-icon{color:var(--warn)}
-  .decision.escalate .decision-icon{color:var(--bad)}
-  .decision-action{font-size:1.35rem; font-weight:700; letter-spacing:-.01em; line-height:1.15}
-  .decision.allow .decision-action{color:var(--good)}
-  .decision.verify .decision-action{color:var(--warn)}
-  .decision.escalate .decision-action{color:var(--bad)}
-  .decision-rec{font-size:.92rem; color:var(--ink-2); margin-top:.2rem}
-  .decision-score{
-    margin-left:auto; text-align:right; font-family:"IBM Plex Mono",monospace;
-    font-variant-numeric:tabular-nums; flex:none;
-  }
-  .decision-score b{font-size:1.4rem; font-weight:600}
-  .decision-score span{display:block; font-size:.62rem; color:var(--ink-3); text-transform:uppercase; letter-spacing:.08em}
-
-  /* ---- layout ---- */
-  .cols{display:grid; grid-template-columns:1.35fr 1fr; gap:1.25rem; margin-top:1.25rem}
-  @media (max-width:800px){ .cols{grid-template-columns:1fr} }
-  .card{background:var(--surface); border:1px solid var(--rule); border-radius:11px; padding:1.2rem; box-shadow:var(--shadow)}
-  .card h2{
-    font-family:"IBM Plex Mono",monospace; font-size:.7rem; letter-spacing:.11em;
-    text-transform:uppercase; color:var(--accent-ink); margin-bottom:.9rem; font-weight:600;
-  }
-  .card + .card{margin-top:1.25rem}
-
-  /* ---- fused timeline ---- */
-  canvas#spark{width:100%; height:96px; display:block; background:var(--surface-2); border-radius:7px}
-  .spark-cap{font-family:"IBM Plex Mono",monospace; font-size:.66rem; color:var(--ink-3); margin-top:.35rem}
-
-  /* ---- signal meters ---- */
-  .sig{margin-top:.9rem}
-  .sig:first-of-type{margin-top:0}
-  .sig-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:.3rem}
-  .sig-label{font-size:.85rem; font-weight:500}
-  .sig-val{font-family:"IBM Plex Mono",monospace; font-size:.8rem; font-variant-numeric:tabular-nums; color:var(--ink-2)}
-  .sig-bar{height:12px; background:var(--surface-2); border-radius:3px; overflow:hidden}
-  .sig-bar i{display:block; height:100%; width:0; border-radius:3px; background:var(--ink-3); transition:width .3s, background-color .3s}
-  .sig-bar i.good{background:var(--good)} .sig-bar i.warn{background:var(--warn)} .sig-bar i.bad{background:var(--bad)}
-  .sig.muted .sig-label{color:var(--ink-3)}
-  .sig.muted .sig-val{color:var(--ink-3)}
-  .sig-planned{font-family:"IBM Plex Mono",monospace; font-size:.66rem; color:var(--ink-3)}
-
-  /* ---- reasons ---- */
-  .reasons{list-style:none; display:flex; flex-direction:column; gap:.45rem; margin-top:.3rem}
-  .reasons li{position:relative; padding-left:1rem; font-size:.86rem; line-height:1.45; color:var(--ink-2)}
-  .reasons li::before{content:""; position:absolute; left:0; top:.5em; width:5px; height:5px; border-radius:1px; background:var(--warn)}
-  .reasons:empty::after{content:"No elevated signals."; font-size:.85rem; color:var(--ink-3)}
-
-  /* ---- context panel ---- */
-  .field{margin-top:.85rem}
-  .field:first-child{margin-top:0}
-  .field label{display:block; font-size:.78rem; color:var(--ink-2); margin-bottom:.3rem}
-  .field select, .field input[type=number]{
-    font:inherit; width:100%; color:var(--ink); background:var(--surface);
-    border:1px solid var(--rule); border-radius:6px; padding:.5rem .6rem;
-  }
-  .field select:focus-visible, .field input:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
-  .check{display:flex; align-items:center; gap:.5rem; font-size:.86rem; color:var(--ink); cursor:pointer}
-  .check input{width:16px; height:16px; accent-color:var(--accent)}
-  .amount-wrap{display:flex; align-items:center; gap:.4rem}
-  .amount-wrap span{font-family:"IBM Plex Mono",monospace; color:var(--ink-3)}
+  /* ---------- header ---------- */
+  header{display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; padding:.25rem 0 1.1rem}
+  .brand{display:flex; align-items:center; gap:.8rem}
+  .logo{width:2.9rem; height:2.9rem; border-radius:13px; background:var(--accent); color:#fff; display:grid; place-items:center; flex:none}
+  .brand h1{font-size:1.45rem; letter-spacing:-.01em; line-height:1.15}
+  .brand p{color:var(--ink-2); font-size:.98rem}
+  .head-actions{display:flex; gap:.5rem}
 
   .btn{
-    font:600 .82rem/1 "IBM Plex Sans",sans-serif; color:#fff; background:var(--accent);
-    border:0; border-radius:8px; padding:.6rem 1rem; cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center; gap:.5rem; cursor:pointer;
+    padding:.7rem 1.05rem; border-radius:12px; border:1px solid var(--line); background:var(--card);
+    color:var(--ink); font-weight:600; font-size:.95rem; line-height:1.2; transition:background .15s, border-color .15s, transform .05s;
   }
-  .btn.ghost{background:transparent; color:var(--accent-ink); border:1px solid var(--rule)}
-  .btn.stop{background:var(--bad)}
-  .btn:disabled{opacity:.5; cursor:not-allowed}
-  .btn:focus-visible{outline:2px solid var(--accent-ink); outline-offset:2px}
-  .row{display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; margin-top:.5rem}
-  .pill{font-family:"IBM Plex Mono",monospace; font-size:.72rem; padding:.25rem .5rem; border-radius:5px; background:var(--surface-2); color:var(--ink-2)}
-  .pill.ok{background:var(--good-bg); color:var(--good)}
+  .btn:hover{background:var(--card-2)}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+  .btn.primary:hover{background:var(--accent-ink); border-color:var(--accent-ink)}
+  .btn.danger{background:var(--bad); border-color:var(--bad); color:#fff}
+  .btn.small{padding:.5rem .8rem; font-size:.88rem; border-radius:10px}
+  .btn[disabled]{opacity:.5; cursor:not-allowed}
+  .btn.icon{padding:.65rem; border-radius:12px}
 
-  /* ---- call audio ---- */
-  .drop{
-    border:1.4px dashed var(--rule); border-radius:9px; padding:1.25rem 1rem; text-align:center;
-    cursor:pointer; font-size:.88rem; transition:border-color .15s, background .15s;
-  }
-  .drop:hover, .drop.over{border-color:var(--accent); background:var(--surface-2)}
-  .drop .sub{font-family:"IBM Plex Mono",monospace; font-size:.7rem; color:var(--ink-3); margin-top:.35rem}
-  .status{font-family:"IBM Plex Mono",monospace; font-size:.76rem; color:var(--ink-2); margin-top:.7rem; min-height:1.1rem; display:flex; align-items:center; gap:.4rem}
-  .status.err{color:var(--bad)}
-  .dot{width:8px; height:8px; border-radius:50%; background:var(--good); flex:none}
-  .dot.busy{background:var(--warn); animation:pulse 1s ease-in-out infinite}
-  @keyframes pulse{50%{opacity:.35}}
-  .spin{width:12px;height:12px;border:2px solid var(--rule);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;flex:none}
+  /* ---------- layout ---------- */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:1.3rem 1.4rem; box-shadow:var(--shadow)}
+  .grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.04fr); gap:1.4rem; align-items:start; margin-top:1.4rem}
+  @media (max-width:60rem){ .grid{grid-template-columns:1fr} }
+  h2.t{font-size:1.25rem; letter-spacing:-.005em; line-height:1.25}
+  .help{color:var(--ink-2); font-size:.95rem}
+  .row{display:flex; flex-wrap:wrap; gap:.55rem; align-items:center}
+  .note{color:var(--ink-3); font-size:.85rem; margin-top:.35rem}
+  .status{display:flex; align-items:flex-start; gap:.55rem; font-size:.93rem; color:var(--ink-2); min-height:1.4rem}
+  .status.ok{color:var(--ok)} .status.err{color:var(--bad)} .status.busy{color:var(--accent-ink)}
+  .spin{width:1rem; height:1rem; border:2.5px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:sp .8s linear infinite; flex:none; margin-top:.15rem}
   @keyframes sp{to{transform:rotate(360deg)}}
-  .mic-live{margin-top:.7rem; display:flex; flex-direction:column; gap:.55rem}
-  .inbar-row{display:flex; align-items:center; gap:.55rem}
-  .inbar-label{font-family:"IBM Plex Mono",monospace; font-size:.66rem; color:var(--ink-3); white-space:nowrap}
-  .inbar{flex:1; height:6px; background:var(--surface-2); border-radius:3px; overflow:hidden}
-  .inbar i{display:block; height:100%; width:0; background:var(--accent); border-radius:3px}
-  .inbar i.silent{background:var(--ink-3)}
-  .dev-row{display:flex; align-items:center; gap:.5rem; font-size:.76rem; color:var(--ink-2); flex-wrap:wrap}
-  .dev-row select{font:inherit; color:var(--ink); background:var(--surface); border:1px solid var(--rule); border-radius:6px; padding:.3rem .45rem; max-width:min(60vw,18rem)}
 
-  /* ---- audit ---- */
-  .audit-meta{font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--ink-3); margin-bottom:.5rem}
-  .audit-box{
-    font-family:"IBM Plex Mono",monospace; font-size:.72rem; line-height:1.7; color:var(--ink-2);
-    background:var(--surface-2); border-radius:7px; padding:.75rem .85rem; overflow-x:auto;
-    max-height:14rem; overflow-y:auto; white-space:pre-wrap; word-break:break-word;
+  /* ---------- what is this ---------- */
+  .eyebrow{font-size:.78rem; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--accent-ink)}
+  .hero h2{font-size:clamp(1.35rem,1.05rem + 1.2vw,1.85rem); line-height:1.2; letter-spacing:-.015em; margin:.3rem 0 .55rem; max-width:46rem}
+  .hero .lead{color:var(--ink-2); font-size:1.03rem; max-width:52rem}
+  .how{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; margin:1.1rem 0 0; padding:0; list-style:none}
+  @media (max-width:48rem){ .how{grid-template-columns:1fr} }
+  .how li{display:flex; gap:.75rem; align-items:flex-start; padding:.8rem .9rem; border-radius:13px; background:var(--card-2)}
+  .how .n{width:1.9rem; height:1.9rem; border-radius:50%; background:var(--accent); color:#fff; font-weight:700; display:grid; place-items:center; flex:none}
+  .how b{display:block; font-size:.98rem; line-height:1.3}
+  .how .d{display:block; color:var(--ink-2); font-size:.88rem; line-height:1.4; margin-top:.1rem}
+
+  /* ---------- pick a call ---------- */
+  .coach{color:var(--ink-2); margin:.35rem 0 .9rem}
+  .who{padding:.7rem .85rem; border-radius:12px; background:var(--card-2); margin-bottom:.3rem}
+  .who.ok{background:var(--ok-bg)}
+  .who.err{background:var(--bad-bg)}
+  .grp{margin-top:1.05rem}
+  .grp h3{font-size:.78rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); margin-bottom:.55rem}
+  .clips{display:grid; gap:.6rem}
+  .clip{
+    position:relative; display:grid; grid-template-columns:2.5rem minmax(0,1fr) auto; gap:.85rem; align-items:center;
+    text-align:left; cursor:pointer; padding:.8rem .95rem; border-radius:14px; overflow:hidden;
+    border:1.5px solid var(--line); background:var(--card);
   }
-  .audit-box:empty::after{content:"No audit events yet."; color:var(--ink-3)}
+  .clip:hover{border-color:var(--ink-3)}
+  .clip .ic{width:2.5rem; height:2.5rem; border-radius:11px; display:grid; place-items:center; background:var(--card-2); color:var(--ink-2)}
+  .clip .ic svg{width:1.3rem; height:1.3rem}
+  .clip.real .ic{background:var(--ok-bg); color:var(--ok)}
+  .clip.fake .ic{background:var(--bad-bg); color:var(--bad)}
+  .clip .txt b{display:block; font-size:1rem; line-height:1.25}
+  .clip .txt .sub{display:block; color:var(--ink-2); font-size:.85rem; line-height:1.35; margin-top:.15rem}
+  .clip .side{display:flex; flex-direction:column; align-items:flex-end; gap:.35rem}
+  .clip .dur{font-size:.78rem; color:var(--ink-3); font-variant-numeric:tabular-nums}
+  .clip .tag{font-size:.74rem; font-weight:700; padding:.15rem .55rem; border-radius:999px; background:var(--card-2); color:var(--ink-2); white-space:nowrap}
+  .clip.real .tag{background:var(--ok-bg); color:var(--ok)}
+  .clip.fake .tag{background:var(--bad-bg); color:var(--bad)}
+  .clip.own .ic, .clip.own .tag{background:var(--accent-bg); color:var(--accent-ink)}
+  .clip[disabled]{opacity:.6; cursor:progress}
+  .clip .play{display:inline-flex; align-items:center; gap:.4rem; font-weight:700; color:var(--accent-ink); font-size:.9rem}
+  .clip .bar{position:absolute; left:0; bottom:0; height:4px; width:0; background:var(--accent)}
+  .clip.playing{border-color:var(--accent); background:var(--accent-bg)}
+  @media (max-width:34rem){
+    .clip{grid-template-columns:2.5rem minmax(0,1fr)}
+    .clip .side{grid-column:1 / -1; flex-direction:row; justify-content:space-between; align-items:center}
+  }
+  #call-status{margin-top:.85rem}
 
-  .alert-card{border-color:color-mix(in srgb,var(--bad) 40%,transparent); background:var(--bad-bg)}
-  .alert-card h2{color:var(--bad)}
-  .alert-body{display:flex; flex-direction:column; gap:.6rem}
-  .alert-line{font-size:.9rem; font-weight:600; color:var(--ink)}
-  .alert-sim{font-family:"IBM Plex Mono",monospace; font-size:.72rem; color:var(--ink-2)}
-  .alert-card.ack{background:var(--surface-2); border-color:var(--rule)}
-  .alert-card.ack h2, .alert-card.ack .alert-line{color:var(--ink-2)}
-  .alert-card.ack #ack-btn{display:none}
+  details.more{margin-top:1.1rem; border:1px solid var(--line); border-radius:13px; background:var(--card)}
+  details.more > summary{cursor:pointer; padding:.8rem 1rem; font-weight:600; color:var(--ink-2); list-style:none}
+  details.more > summary::-webkit-details-marker{display:none}
+  details.more > summary::before{content:"▸"; margin-right:.5rem; display:inline-block; transition:transform .15s}
+  details.more[open] > summary::before{transform:rotate(90deg)}
+  .moreb{padding:0 1rem 1.1rem}
+  .moreb h3{font-size:.78rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); margin:1.15rem 0 .55rem}
+  .moreb h3:first-child{margin-top:.2rem}
 
-  footer{margin-top:2rem; padding-top:1.3rem; border-top:1px solid var(--rule)}
-  footer p{font-size:.78rem; line-height:1.5; color:var(--ink-3); max-width:70ch}
+  .choices{display:grid; gap:.5rem}
+  .choice{
+    display:flex; gap:.8rem; align-items:flex-start; text-align:left; width:100%; cursor:pointer;
+    padding:.7rem .9rem; border:1.5px solid var(--line); border-radius:13px; background:var(--card);
+  }
+  .choice:hover{border-color:var(--ink-3)}
+  .choice[aria-checked="true"]{border-color:var(--accent); background:var(--accent-bg)}
+  .choice .dotr{width:1.15rem; height:1.15rem; border-radius:50%; border:2px solid var(--ink-3); flex:none; margin-top:.2rem}
+  .choice[aria-checked="true"] .dotr{border-color:var(--accent); background:radial-gradient(var(--accent) 0 45%, transparent 50%)}
+  .choice b{display:block; font-size:.98rem}
+  .choice span.sub{color:var(--ink-2); font-size:.86rem}
+  .field{margin-top:.9rem}
+  .switch{display:flex; align-items:center; gap:.75rem; cursor:pointer; font-size:.95rem}
+  .switch input{position:absolute; opacity:0; pointer-events:none}
+  .switch .track{width:2.7rem; height:1.55rem; border-radius:999px; background:var(--line); position:relative; transition:background .15s; flex:none}
+  .switch .track::after{content:""; position:absolute; top:.19rem; left:.19rem; width:1.17rem; height:1.17rem; border-radius:50%; background:#fff; transition:transform .15s; box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .switch input:checked + .track{background:var(--ok)}
+  .switch input:checked + .track::after{transform:translateX(1.15rem)}
+  .switch input:focus-visible + .track{outline:3px solid var(--accent); outline-offset:2px}
+  .amount{display:flex; align-items:center; gap:.5rem; margin-top:.4rem}
+  .amount span{font-weight:700; color:var(--ink-2); font-size:1.1rem}
+  .amount input{width:100%; max-width:15rem; padding:.6rem .8rem; border:1.5px solid var(--line); border-radius:11px; background:var(--card); font-size:1rem}
+  label.lbl{display:block; font-weight:600; font-size:.93rem; margin-bottom:.1rem}
+  .seg{display:inline-flex; border:1.5px solid var(--line); border-radius:11px; overflow:hidden}
+  .seg button{border:0; background:var(--card); padding:.5rem .8rem; cursor:pointer; font-size:.88rem; font-weight:600; color:var(--ink-2)}
+  .seg button[aria-pressed="true"]{background:var(--accent); color:#fff}
+  .modes{display:flex; gap:1.2rem; flex-wrap:wrap; margin-top:.9rem; align-items:flex-end}
+  .mic-level{height:6px; border-radius:3px; background:var(--card-2); overflow:hidden; margin-top:.6rem; max-width:18rem}
+  .mic-level i{display:block; height:100%; width:0; background:var(--accent); transition:width .1s}
+
+  /* ---------- the answer ---------- */
+  .result{position:sticky; top:1rem}
+  @media (max-width:60rem){ .result{position:static} }
+  .legend{display:grid; gap:.55rem; margin:1rem 0 .9rem}
+  .lg{display:flex; gap:.8rem; align-items:flex-start; padding:.8rem .95rem; border-radius:13px; border:1px solid var(--line); background:var(--card)}
+  .lg i{width:1rem; height:1rem; border-radius:50%; margin-top:.28rem; flex:none}
+  .lg.ok i{background:var(--ok)} .lg.warn i{background:var(--warn)} .lg.bad i{background:var(--bad)}
+  .lg b{display:block; font-size:1.02rem}
+  .lg span{color:var(--ink-2); font-size:.92rem}
+
+  .verdict{
+    display:flex; gap:1rem; align-items:flex-start; border-radius:var(--radius); padding:1.2rem 1.3rem;
+    border:2px solid var(--line); background:var(--idle-bg); transition:background .25s, border-color .25s;
+  }
+  .verdict .badge{width:3.6rem; height:3.6rem; border-radius:50%; display:grid; place-items:center; background:var(--card); color:var(--idle); flex:none}
+  .verdict .badge svg{width:1.9rem; height:1.9rem; stroke-width:2.4}
+  .verdict h2{font-size:clamp(1.45rem,1.1rem + 1.4vw,2rem); line-height:1.15; letter-spacing:-.015em}
+  .verdict p{color:var(--ink-2); margin-top:.35rem}
+  .verdict .peak{margin-top:.7rem; padding:.55rem .75rem; border-radius:10px; background:var(--card); color:var(--ink); border-left:5px solid var(--warn); font-size:.92rem}
+  .verdict .peak.bad{border-left-color:var(--bad)}
+  .verdict.ok{background:var(--ok-bg); border-color:var(--ok-line)}   .verdict.ok .badge{color:var(--ok)}   .verdict.ok h2{color:var(--ok)}
+  .verdict.warn{background:var(--warn-bg); border-color:var(--warn-line)} .verdict.warn .badge{color:var(--warn)} .verdict.warn h2{color:var(--warn)}
+  .verdict.bad{background:var(--bad-bg); border-color:var(--bad-line)} .verdict.bad .badge{color:var(--bad)} .verdict.bad h2{color:var(--bad)}
+  .chips{display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.7rem}
+  .chips:empty{display:none}
+  .chip{font-size:.8rem; font-weight:600; padding:.22rem .65rem; border-radius:999px; background:var(--card); color:var(--ink-2); border:1px solid var(--line)}
+  .chip.live{color:var(--accent-ink); border-color:var(--accent)}
+  .chip.live::before{content:""; display:inline-block; width:.5rem; height:.5rem; border-radius:50%; background:var(--accent); margin-right:.4rem; animation:pulse 1.2s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.25}}
+
+  .score{display:flex; gap:.75rem; align-items:flex-start; margin-top:.8rem; padding:.8rem .95rem; border-radius:13px; border:1.5px solid var(--line); background:var(--card)}
+  .score svg{margin-top:.2rem; width:1.3rem; height:1.3rem}
+  .score b{display:block; font-size:1rem}
+  .score span{color:var(--ink-2); font-size:.92rem}
+  .score.ok{border-color:var(--ok-line); background:var(--ok-bg)}   .score.ok svg, .score.ok b{color:var(--ok)}
+  .score.warn{border-color:var(--warn-line); background:var(--warn-bg)} .score.warn svg, .score.warn b{color:var(--warn)}
+  .score.bad{border-color:var(--bad-line); background:var(--bad-bg)}   .score.bad svg, .score.bad b{color:var(--bad)}
+
+  .meter{margin-top:1.2rem}
+  .meter-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:.45rem}
+  .meter-top b{font-size:.95rem}
+  .meter-top span{font-size:.88rem; color:var(--ink-2); font-variant-numeric:tabular-nums}
+  .track3{position:relative; height:1.1rem; border-radius:999px; overflow:visible;
+          background:linear-gradient(90deg,var(--ok-line) 0 var(--w1,55%), var(--warn-line) var(--w1,55%) var(--w2,75%), var(--bad-line) var(--w2,75%) 100%)}
+  .track3 .mark{position:absolute; top:50%; left:0; width:1.5rem; height:1.5rem; border-radius:50%; background:var(--card); border:4px solid var(--idle);
+                transform:translate(-50%,-50%); transition:left .4s cubic-bezier(.3,.7,.3,1), border-color .25s; box-shadow:0 2px 6px rgba(0,0,0,.25)}
+  .track3.ok .mark{border-color:var(--ok)} .track3.warn .mark{border-color:var(--warn)} .track3.bad .mark{border-color:var(--bad)}
+  .zones{position:relative; height:1.5rem; margin-top:.35rem; font-size:.78rem; color:var(--ink-3)}
+  .zones span{position:absolute; top:0; white-space:nowrap; transform:translateX(-50%)}
+  .track3.idle .mark{display:none}
+  .meter-note{font-size:.82rem; color:var(--ink-3); margin-top:.1rem}
+
+  .todo{margin-top:1rem; padding:.85rem 1rem; border-radius:13px; background:var(--card-2); border-left:5px solid var(--idle)}
+  .todo.ok{border-left-color:var(--ok)} .todo.warn{border-left-color:var(--warn)} .todo.bad{border-left-color:var(--bad)}
+  .todo > b{display:block; font-size:.8rem; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); margin-bottom:.15rem}
+  .todo .row{margin-top:.7rem}
+  .todo .acked{font-size:.9rem; color:var(--ok); font-weight:600}
+
+  h3.sec{font-size:.78rem; text-transform:uppercase; letter-spacing:.09em; color:var(--ink-3); margin:1.5rem 0 .65rem}
+  .finds{display:grid; gap:.55rem}
+  .find{display:flex; gap:.8rem; align-items:flex-start; padding:.75rem .9rem; border:1px solid var(--line); border-radius:13px; background:var(--card)}
+  .light{width:.95rem; height:.95rem; border-radius:50%; background:var(--idle); flex:none; margin-top:.4rem; box-shadow:0 0 0 4px var(--idle-bg)}
+  .light.ok{background:var(--ok); box-shadow:0 0 0 4px var(--ok-bg)}
+  .light.warn{background:var(--warn); box-shadow:0 0 0 4px var(--warn-bg)}
+  .light.bad{background:var(--bad); box-shadow:0 0 0 4px var(--bad-bg)}
+  .find .q{font-size:.82rem; color:var(--ink-3); font-weight:600}
+  .find .a{font-weight:700; font-size:1.02rem; line-height:1.3}
+  .find .d{font-size:.88rem; color:var(--ink-2); margin-top:.1rem}
+
+  canvas#tl{width:100%; height:12rem; display:block; border-radius:12px; background:var(--card-2)}
+  .tl-cap{font-size:.84rem; color:var(--ink-3); margin-top:.5rem}
+  .log{list-style:none; padding:0; margin:0; display:grid; gap:.35rem; font-size:.92rem; max-height:11rem; overflow:auto}
+  .log li{display:flex; gap:.7rem; color:var(--ink-2)}
+  .log time{font-variant-numeric:tabular-nums; color:var(--ink-3); flex:none; min-width:4.6rem}
+  .log:empty::after{content:"Nothing yet: play a call to see what happens."; color:var(--ink-3)}
+  .techbody table{width:100%; border-collapse:collapse; font-size:.86rem}
+  .techbody td{padding:.3rem 0; border-top:1px solid var(--line); vertical-align:top}
+  .techbody td:first-child{color:var(--ink-3); width:46%; padding-right:.8rem}
+  .techbody td:last-child{font-family:ui-monospace,Consolas,monospace; font-size:.82rem; word-break:break-word}
+  .techbody pre{margin:.6rem 0 0; padding:.7rem .8rem; background:var(--card-2); border-radius:9px; font-size:.78rem; max-height:11rem; overflow:auto; white-space:pre-wrap}
+
+  footer{margin-top:2rem; padding-top:1.2rem; border-top:1px solid var(--line); color:var(--ink-3); font-size:.88rem; max-width:62rem}
+  footer b{color:var(--ink-2)}
+
+  .toast{position:fixed; left:50%; bottom:1.2rem; transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:.75rem 1.1rem; border-radius:12px; box-shadow:var(--shadow); z-index:50; max-width:min(92vw,34rem); font-size:.95rem}
+
+  dialog{max-width:44rem; width:calc(100% - 2rem); border:1px solid var(--line); border-radius:18px; padding:0; background:var(--card); color:var(--ink); box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  dialog::backdrop{background:rgba(10,15,22,.55)}
+  .dlg{padding:1.5rem 1.6rem 1.3rem; max-height:85vh; overflow:auto}
+  .dlg h2{font-size:1.35rem; margin-bottom:.4rem}
+  .dlg h3{font-size:1.02rem; margin:1.2rem 0 .35rem}
+  .dlg p,.dlg li{color:var(--ink-2); font-size:.97rem}
+  .dlg ul{margin:.3rem 0 0; padding-left:1.2rem; display:grid; gap:.35rem}
+  .dlg .vrow{display:flex; gap:.7rem; align-items:flex-start; margin-top:.5rem}
+  .dlg .vrow i{width:.9rem; height:.9rem; border-radius:50%; margin-top:.35rem; flex:none}
+  .dlg-foot{display:flex; justify-content:flex-end; margin-top:1.2rem}
+
   @media (prefers-reduced-motion: reduce){*{animation:none!important; transition:none!important}}
 </style>
 </head>
@@ -208,564 +281,1102 @@
 <div class="wrap">
 
   <header>
-    <div>
-      <div class="brand">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-          <path d="M2 12h3l2-6 3 15 3-19 3 13 2-3h4"></path>
-        </svg>
-        <b>VoiceGuard</b>
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" class="i" style="width:1.7rem;height:1.7rem"><path d="M3 12v0M7 8v8M11 4v16M15 8v8M19 10v4M21.5 12v0"/></svg></div>
+      <div>
+        <h1>VoiceGuard</h1>
+        <p>Is the person on this call really your customer?</p>
       </div>
-      <div class="sub">Live-call console &mdash; synthetic speech, speaker consistency &amp; call context in one decision</div>
     </div>
-    <div class="badge" id="badge" title="detection model">loading&hellip;<a href="/detector">raw detector &rarr;</a></div>
+    <div class="head-actions">
+      <button class="btn" id="help-btn" type="button"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M9.5 9.2a2.6 2.6 0 1 1 3.9 2.2c-.8.5-1.4 1-1.4 2M12 17h.01"/></svg> How it works</button>
+      <button class="btn icon" id="theme-btn" type="button" aria-label="Switch between light and dark"><svg class="i" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/></svg></button>
+    </div>
   </header>
 
-  <div class="scenario-line">Call in progress &mdash; <span id="scenario-name">transaction</span></div>
+  <!-- ===================== what this is ===================== -->
+  <section class="card hero" aria-labelledby="hero-h">
+    <div class="eyebrow">What is this?</div>
+    <h2 id="hero-h">Software can now copy anyone's voice. VoiceGuard tells you whether a caller is real.</h2>
+    <p class="lead">Fraudsters use free tools to clone a customer's voice from a few seconds of audio, then phone the bank pretending to be them. VoiceGuard listens to the call while it happens and tells the person who answered, in plain words, whether to trust the caller.</p>
+    <ol class="how">
+      <li><span class="n">1</span><span><b>It learns the real voice</b><span class="d">From a few seconds of the genuine customer speaking.</span></span></li>
+      <li><span class="n">2</span><span><b>It listens to the call</b><span class="d">While the caller talks, it checks the voice and the sound for signs of a fake.</span></span></li>
+      <li><span class="n">3</span><span><b>It gives a clear answer</b><span class="d">Real customer, double-check or stop, with the reasons.</span></span></li>
+    </ol>
+  </section>
 
-  <!-- decision banner -->
-  <div class="decision" id="decision">
-    <div class="decision-icon" id="dec-icon">&middot;</div>
-    <div>
-      <div class="decision-action" id="dec-action">Waiting for call audio</div>
-      <div class="decision-rec" id="dec-rec">Enrol the caller's voice, then play or stream the call.</div>
-    </div>
-    <div class="decision-score"><b id="dec-score">&mdash;</b><span>risk / 100</span></div>
-  </div>
-  <div class="latency-line" id="latency-line" hidden></div>
+  <div class="grid">
 
-  <div class="cols">
-    <!-- LEFT: signals -->
-    <div>
-      <div class="card">
-        <h2>Fused risk over the call</h2>
-        <canvas id="spark" width="720" height="96" aria-hidden="true"></canvas>
-        <div class="spark-cap">higher = more suspicious &middot; the three signals below, weighted and smoothed</div>
-      </div>
+    <!-- ===================== LEFT: play a call ===================== -->
+    <section class="card" id="pick" aria-labelledby="pick-h">
+      <h2 class="t" id="pick-h">Try it: play a phone call</h2>
+      <p class="coach" id="coach"></p>
+      <div class="status who" id="reg-status" role="status">Getting ready…</div>
 
-      <div class="card">
-        <h2>Contributing signals</h2>
-        <div class="sig" id="sig-spoof">
-          <div class="sig-head"><span class="sig-label">Synthetic voice</span><span class="sig-val" id="sig-spoof-val">&mdash;</span></div>
-          <div class="sig-bar"><i id="sig-spoof-fill"></i></div>
-        </div>
-        <div class="sig" id="sig-speaker">
-          <div class="sig-head"><span class="sig-label">Speaker mismatch</span><span class="sig-val" id="sig-speaker-val">&mdash;</span></div>
-          <div class="sig-bar"><i id="sig-speaker-fill"></i></div>
-        </div>
-        <div class="sig" id="sig-prosody">
-          <div class="sig-head"><span class="sig-label">Prosody / behaviour</span><span class="sig-val" id="sig-prosody-val">&mdash;</span></div>
-          <div class="sig-bar"><i id="sig-prosody-fill"></i></div>
-        </div>
-        <div class="sig" id="sig-context">
-          <div class="sig-head"><span class="sig-label">Call context</span><span class="sig-val" id="sig-context-val">&mdash;</span></div>
-          <div class="sig-bar"><i id="sig-context-fill"></i></div>
+      <div class="grp" id="grp-real"><h3>A real customer</h3><div class="clips" id="clips-real"></div></div>
+      <div class="grp" id="grp-fake"><h3>Fake voices, made by software</h3><div class="clips" id="clips-fake"></div></div>
+      <div class="grp" id="grp-own">
+        <h3>Your own voice</h3>
+        <div class="clips">
+          <button class="clip own" id="own-test" type="button" aria-label="Try it with your own voice: speak for 8 seconds, then keep talking">
+            <span class="ic"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+            <span class="txt"><b>Try it with your own voice</b><span class="sub">Say anything for 8 seconds so VoiceGuard learns your voice, then keep talking. Ask a friend to speak, or play a fake voice near the microphone, and watch it react.</span></span>
+            <span class="side"><span class="tag">Live microphone</span><span class="dur">needs the microphone</span><span class="play"><svg class="i fill" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Start</span></span>
+          </button>
         </div>
       </div>
+      <div class="note" id="no-clips" hidden>No sample calls found. Run <code>python scripts/pick_demo_clips.py</code>, or use your own recordings below.</div>
+      <div class="status" id="call-status" role="status"></div>
 
-      <div class="card">
-        <h2>Why</h2>
-        <ul class="reasons" id="reasons"></ul>
-      </div>
-    </div>
+      <details class="more" id="own">
+        <summary>Use your own audio, or change the call details</summary>
+        <div class="moreb">
+          <h3>1. Put a real person's voice on file</h3>
+          <p class="help" style="margin-bottom:.7rem">VoiceGuard compares each caller with this voice, so testing with a friend's voice note starts here: upload one of their recordings. It is kept only for this visit, and no recording is stored.</p>
+          <div class="row">
+            <button class="btn" id="reg-sample" type="button" hidden>Use the sample customer</button>
+            <button class="btn" id="reg-upload" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 20h16"/></svg> Upload a recording</button>
+            <button class="btn" id="reg-record" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg> Record 8 seconds</button>
+          </div>
+          <input type="file" id="reg-file" accept="audio/*,.wav,.flac,.mp3,.m4a,.ogg" hidden>
 
-    <!-- RIGHT: context + audio + audit -->
-    <div>
-      <div class="card">
-        <h2>Call context</h2>
-        <div class="field">
-          <label for="f-scenario">Scenario</label>
-          <select id="f-scenario">
-            <option value="routine">Routine support call</option>
-            <option value="transaction" selected>Payment / transfer on the call</option>
-            <option value="privileged">Privileged change (reset, beneficiary)</option>
-          </select>
-        </div>
-        <div class="field">
-          <label class="check"><input type="checkbox" id="f-caller"> Caller's number is in known contacts</label>
-        </div>
-        <div class="field">
-          <label for="f-amount">Transfer amount discussed</label>
-          <div class="amount-wrap"><span>&#8377;</span><input type="number" id="f-amount" min="0" step="1000" value="0"></div>
-        </div>
-        <div class="row">
-          <button class="btn ghost" id="enrol-btn">Record 6 s</button>
-          <button class="btn ghost" id="enrol-file-btn">Enrol from a file</button>
-          <span class="pill" id="enrol-pill">not enrolled</span>
-        </div>
-        <input type="file" id="enrol-file" accept="audio/*,.wav,.flac,.mp3,.m4a,.ogg" hidden>
-      </div>
+          <h3>2. Play their call</h3>
+          <p class="help" style="margin-bottom:.7rem">Upload a different recording of the same person, or use the microphone.</p>
+          <div class="row">
+            <button class="btn" id="call-upload" type="button"><svg class="i" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5M4 20h16"/></svg> Upload a call recording</button>
+            <button class="btn" id="call-mic" type="button"><svg class="i" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg> <span id="mic-label">Listen on the microphone</span></button>
+            <button class="btn danger" id="stop-btn" type="button" hidden><svg class="i fill" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> Stop</button>
+          </div>
+          <input type="file" id="call-file" accept="audio/*,.wav,.flac,.mp3,.m4a,.ogg" hidden>
+          <div class="mic-level" id="mic-level" hidden><i id="mic-level-i"></i></div>
+          <div class="modes">
+            <div>
+              <div class="lbl" style="font-size:.85rem;margin-bottom:.35rem">How to check a recording</div>
+              <div class="seg" role="group" aria-label="How to check a recording">
+                <button type="button" id="mode-live" aria-pressed="true">In real time</button>
+                <button type="button" id="mode-fast" aria-pressed="false">Instantly</button>
+              </div>
+            </div>
+            <label class="switch"><input type="checkbox" id="f-sound" checked><span class="track"></span><span>Play the sound</span></label>
+          </div>
 
-      <div class="card">
-        <h2>Call audio</h2>
-        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Load a call recording">
-          Drop a call recording, or click to choose
-          <div class="sub">wav &middot; flac &middot; mp3 &middot; m4a</div>
-        </div>
-        <input type="file" id="file" accept="audio/*,.wav,.flac,.mp3,.m4a,.ogg" hidden>
-        <div class="row">
-          <button class="btn" id="mic-btn">Use microphone instead</button>
-        </div>
-        <div class="mic-live" id="mic-live" hidden>
-          <div class="inbar-row"><span class="inbar-label">mic input</span><div class="inbar"><i id="mic-inlevel"></i></div></div>
-          <div class="dev-row" id="mic-devrow" hidden>
-            <label for="mic-device">Input</label>
-            <select id="mic-device"></select>
+          <h3>Details of the call</h3>
+          <p class="help" style="margin-bottom:.7rem">The more that is at stake, the less evidence VoiceGuard needs before it warns you.</p>
+          <div class="choices" role="radiogroup" aria-label="What is the call about?">
+            <button class="choice" type="button" role="radio" data-scn="routine" aria-checked="true"><span class="dotr"></span><span><b>An everyday question</b><span class="sub">Balance, opening hours, a general enquiry.</span></span></button>
+            <button class="choice" type="button" role="radio" data-scn="transaction" aria-checked="false"><span class="dotr"></span><span><b>A payment or transfer</b><span class="sub">The caller wants money moved.</span></span></button>
+            <button class="choice" type="button" role="radio" data-scn="privileged" aria-checked="false"><span class="dotr"></span><span><b>A sensitive change</b><span class="sub">Password reset, new payee, higher limit.</span></span></button>
+          </div>
+          <div class="field">
+            <label class="switch"><input type="checkbox" id="f-known" checked><span class="track"></span><span>The caller's number is a saved contact</span></label>
+          </div>
+          <div class="field" id="amount-field" hidden>
+            <label class="lbl" for="f-amount">Amount involved, if any</label>
+            <div class="amount"><span>₹</span><input id="f-amount" type="number" min="0" step="1000" value="0" inputmode="numeric"></div>
+            <div class="note">For example 75000 for a seventy-five thousand rupee transfer.</div>
           </div>
         </div>
-        <div class="status" id="status">Idle.</div>
-      </div>
+      </details>
+    </section>
 
-      <div class="card alert-card" id="alert-card" hidden>
-        <h2>Alert</h2>
-        <div class="alert-body">
-          <div class="alert-line" id="alert-line">&mdash;</div>
-          <div class="alert-sim">Simulated: SMS to supervisor &middot; email to fraud-ops@bank &middot; in-app banner to the agent</div>
-          <button class="btn" id="ack-btn">Acknowledge</button>
+    <!-- ===================== RIGHT: the answer ===================== -->
+    <section class="card result" id="answer" aria-label="VoiceGuard's answer">
+
+      <div id="idle">
+        <h2 class="t">VoiceGuard's answer appears here</h2>
+        <p class="help" style="margin-top:.35rem">Press <b>Play</b> on a call. While it plays, VoiceGuard listens and gives one of three answers:</p>
+        <div class="legend">
+          <div class="lg ok"><i></i><div><b>Looks like the real customer</b><span>No red flags. Carry on as normal.</span></div></div>
+          <div class="lg warn"><i></i><div><b>Double-check this caller</b><span>Something doesn't add up. Ask a security question.</span></div></div>
+          <div class="lg bad"><i></i><div><b>Stop</b><span>A fake voice, or someone who isn't the customer on file. Pause any payment and phone the customer back.</span></div></div>
         </div>
+        <p class="note">It also shows how risky the call looks and the four things it checked, so you can see why.</p>
       </div>
 
-      <div class="card">
-        <h2>Audit trail</h2>
-        <div class="audit-meta" id="audit-meta">feature-only &mdash; no audio, transcript or voiceprint is stored</div>
-        <div class="audit-box" id="audit-box"></div>
+      <div id="live" hidden>
+        <div class="verdict" id="verdict" aria-live="polite">
+          <div class="badge" id="v-badge"></div>
+          <div style="min-width:0">
+            <h2 id="v-title">Listening…</h2>
+            <p id="v-text"></p>
+            <p class="peak" id="peak" hidden></p>
+            <div class="chips" id="chips"></div>
+          </div>
+        </div>
+
+        <div class="score" id="score" hidden></div>
+
+        <div class="meter">
+          <div class="meter-top"><b>Risk level</b><span id="m-num">no call yet</span></div>
+          <div class="track3 idle" id="track" role="img" aria-label="Risk level meter"><div class="mark" id="mark" style="left:0%"></div></div>
+          <div class="zones" id="zones"></div>
+          <div class="meter-note" id="meter-note">A relative score of how far this call is from a normal one, not the chance that it is fake.</div>
+        </div>
+
+        <div class="todo" id="todo" hidden>
+          <b>What to do now</b><span id="todo-text"></span>
+          <div class="row" id="ack-row" hidden>
+            <button class="btn primary small" id="ack-btn" type="button">I've seen this</button>
+            <span class="acked" id="ack-done" hidden>Noted in the activity log. (Demo only: a real deployment would also message a supervisor.)</span>
+          </div>
+        </div>
+
+        <h3 class="sec">How VoiceGuard decided</h3>
+        <div class="finds" id="finds"></div>
+
+        <details class="more" id="more-detail">
+          <summary>More detail: risk over time, activity log, technical data</summary>
+          <div class="moreb techbody">
+            <h3>How the risk changed during the call</h3>
+            <canvas id="tl" aria-label="Risk over time"></canvas>
+            <div class="tl-cap" id="tl-cap"></div>
+            <h3>What happened during this visit</h3>
+            <ul class="log" id="log"></ul>
+            <h3>For engineers</h3>
+            <div class="row" style="margin-bottom:.6rem"><button class="btn small" id="copy-tech" type="button">Copy these details</button><span class="note" id="copy-note" style="margin:0"></span></div>
+            <table id="tech"></table>
+            <pre id="audit" aria-label="Recent decision records"></pre>
+          </div>
+        </details>
       </div>
-    </div>
+    </section>
   </div>
 
   <footer>
-    <p>Decision-support for a human agent, not an automated block. Risk is a relative score, not a
-    probability. Synthetic-voice detection is strongest on known methods; the speaker check needs a
-    clean 6-second enrolment. Alerts, gRPC and Indian-language evaluation are on the roadmap, not in
-    this build.</p>
+    <p><b>Decision support, not a gatekeeper.</b> VoiceGuard helps a person decide; it never blocks a call on its own. In tests on simulated and recorded calls it reached the right verdict about nine times in ten, but real phone networks, unusual voices and new cloning tools can still fool it. Treat "Looks like the real customer" as <i>no red flags found</i>, not as proof. Only measurements, never audio, are kept in the activity record.</p>
   </footer>
 </div>
+
+<dialog id="help-dlg" aria-labelledby="help-title">
+  <div class="dlg">
+    <h2 id="help-title">How VoiceGuard works</h2>
+    <p>When someone phones in, VoiceGuard answers one question: <b>is this the registered customer, or someone (or something) imitating them?</b> It checks four things and turns them into one of three answers.</p>
+
+    <h3>The three answers</h3>
+    <div class="vrow"><i style="background:var(--ok)"></i><p><b>Looks like the real customer.</b> No red flags. Carry on as normal.</p></div>
+    <div class="vrow"><i style="background:var(--warn)"></i><p><b>Double-check this caller.</b> Something doesn't add up. Ask a security question only the real customer could answer.</p></div>
+    <div class="vrow"><i style="background:var(--bad)"></i><p><b>Stop.</b> Either the voice looks fake (cloned or computer-generated), or it is not the customer on file. Pause any payment or change, end the call and phone the customer back on their registered number.</p></div>
+
+    <h3>The four checks</h3>
+    <ul>
+      <li><b>Does the voice match the registered customer?</b> The caller's voice is compared with the one on file.</li>
+      <li><b>Are there signs of a computer-generated voice?</b> Voice-cloning and text-to-speech tools leave faint marks that this check looks for. It cannot see every tool, which is why the voice match matters too.</li>
+      <li><b>Is anything about the call itself unusual?</b> An unknown number or a large payment makes VoiceGuard more careful.</li>
+      <li><b>Is the audio clear?</b> Noise, echo or distortion make a call harder to judge. VoiceGuard allows for them, and tells you when it had to.</li>
+    </ul>
+
+    <h3>What is inside</h3>
+    <ul>
+      <li><b>A voice detector</b> that listens for the faint marks computer-generated speech leaves.</li>
+      <li><b>A voice matcher</b> that compares the caller with the customer's voice on file.</li>
+      <li><b>A decision step</b> that combines everything and allows for noise, echo and phone-line distortion, so a bad line is not mistaken for a fake.</li>
+      <li><b>A notebook</b> that records each decision (the scores and the reasons, never any audio) so it can be reviewed later.</li>
+    </ul>
+
+    <h3>Other words you will see</h3>
+    <ul>
+      <li><b>Risk level</b>: one number for the whole picture. It is a relative score, not the chance the caller is fake. The bar shows where it turns from genuine to double-check to stop for this kind of call.</li>
+      <li><b>Early reading</b>: VoiceGuard has heard only a few seconds. It can ask you to double-check, but will not tell you to stop until it is sure.</li>
+      <li><b>Listening</b>: not enough clear speech yet, such as silence, a muted line or just noise. VoiceGuard says so instead of guessing.</li>
+    </ul>
+
+    <h3>What it cannot do</h3>
+    <p>It will not catch every fake. A very good clone that sounds like the customer and is played down a clean line can pass, and an unusual real voice can be questioned. That is why it advises a person rather than deciding.</p>
+    <div class="dlg-foot"><button class="btn primary" id="help-close" type="button">Got it</button></div>
+  </div>
+</dialog>
 
 <script>
 (() => {
   "use strict";
   const $ = (id) => document.getElementById(id);
-  let TH = { genuine: 0.35, synthetic: 0.65 };
-  let SID = null;
-  let lastClip = null;      // File, for re-analysis on context change
-  let ws = null, ac = null, micProc = null, micStream = null, streaming = false;
-  const history = [];
-  let auditCount = 0;
-  let lastAction = "ALLOW";
+  const ICONS = {
+    check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    question: '<path d="M9.2 9.3a3 3 0 1 1 4.6 2.5c-.9.6-1.8 1.2-1.8 2.6M12 18h.01"/>',
+    stop: '<path d="M7 7l10 10M17 7 7 17"/>',
+    ear: '<path d="M4 12v0M8 8v8M12 5v14M16 8v8M20 12v0"/>',
+    person: '<circle cx="12" cy="8" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/>',
+    clone: '<circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="16.5" cy="9.5" r="2.6"/><path d="M15 14.3a5 5 0 0 1 5.5 4.7"/>',
+    robot: '<rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 12.5h.01M15 12.5h.01M9 16h6"/>',
+    play: '<path d="M8 5v14l11-7z"/>',
+  };
+  const svg = (name, cls = "") =>
+    `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]}</svg>`;
 
-  const band = (r) => (r == null ? "" : r >= 0.65 ? "bad" : r <= 0.35 ? "good" : "warn");
-  const pctInt = (r) => (r == null ? "—" : Math.round(r * 100));
+  const S = {
+    sid: null, info: null, clips: [], registered: false, scenario: "routine",
+    realtime: true, sound: true, run: null, history: [], flaggedAt: null, last: null, peak: null, rows: null,
+    ackedRank: -1, lastBlob: null, lastLabel: "", lastTruth: null, truth: null, auditLines: [],
+    onFile: null, tipShown: false,
+    tried: { real: false, fake: false },
+  };
+  const RANK = { ALLOW: 0, VERIFY: 1, ESCALATE: 2 };
+  // The browser's own noise suppression, echo cancellation and gain control reshape a voice the way a
+  // messaging app does, and the detector was trained on unprocessed speech: ask for the raw microphone,
+  // for registering a voice and for listening alike so the two match.
+  const MIC = { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } };
+  const narrow = () => matchMedia("(max-width: 60rem)").matches;
 
-  /* ---------- boot ---------- */
-  async function boot() {
-    await loadInfo();
-    await newSession();
-    drawSpark();
+  /* ===================== plain-language text ===================== */
+  const VERDICT = {
+    ALLOW: { cls: "ok", icon: "check", title: "Looks like the real customer",
+      text: "No signs of a fake or cloned voice. You can carry on with the call as normal.",
+      todo: "Carry on as normal, and stay alert if the request changes." },
+    VERIFY: { cls: "warn", icon: "question", title: "Double-check this caller",
+      text: "Something doesn't fully add up.",
+      todo: "Before doing anything sensitive, ask a security question only the real customer could answer." },
+    ESCALATE: { cls: "bad", icon: "stop", title: "Stop: this may be a fake voice",
+      text: "The evidence points to a cloned or computer-generated voice, or to a different person.",
+      todo: "Pause any payment or change. End the call and phone the customer back on their registered number." },
+    WAITING: { cls: "idle", icon: "ear", title: "Listening…",
+      text: "Not enough clear speech yet to judge.", todo: "" },
+  };
+  const ZONE_NAMES = ["Looks genuine", "Double-check", "Stop and verify"];
+
+  // "This may be a fake voice" and "this is not the customer on file" are different claims, and a
+  // real person who is simply not the registered customer must not be called fake. The server
+  // words each head's finding against its own thresholds (none / some / likely / strong).
+  const LV = { none: 0, some: 1, likely: 2, strong: 3 };
+  function levels(m) {
+    const l = m && m.evidence_level;
+    if (l) return { fake: LV[l.synthetic] ?? 0, other: LV[l.voice_mismatch] ?? 0 };
+    const ev = (m && m.evidence) || {};      // hand-set fallback fusion: no levels, only scores
+    const f = (p) => (p >= 0.85 ? 3 : p >= 0.5 ? 2 : p >= 0.3 ? 1 : 0);
+    return { fake: f(ev.synthetic ?? 0), other: f(ev.voice_mismatch ?? 0) };
   }
-  async function loadInfo(t = 0) {
-    try {
-      const d = await (await fetch("/api/info")).json();
-      TH = { genuine: d.genuine_below, synthetic: d.synthetic_above };
-      const dev = /cuda|gpu/i.test(d.device || "") ? "GPU" : "CPU";
-      $("badge").innerHTML = `AASIST + WavLM · ${dev}<a href="/detector">raw detector →</a>`;
-    } catch (e) {
-      if (t < 15) return void setTimeout(() => loadInfo(t + 1), 800);
-      $("badge").textContent = "model unavailable";
+  function titleFor(action, m) {
+    if (action === "ESCALATE") {
+      const l = levels(m);
+      if (l.other > l.fake) return "Stop: this isn't the customer on file";
+      return l.fake >= 2 ? VERDICT.ESCALATE.title : "Stop: several warning signs add up";
+    }
+    return (VERDICT[action] || VERDICT.WAITING).title;
+  }
+  function stopText(m) {
+    const l = levels(m);
+    if (l.other > l.fake) {
+      return "The caller's voice does not match the voice on file. It may be a different person. If this is the right person, put their own voice on file first." +
+        (l.fake >= 2 ? " The audio also has some marks that can come from synthetic speech, though compressed or noise-suppressed recordings (such as voice messages) can show them too." : "");
+    }
+    if (l.fake >= 2 && l.other >= 2) return "The audio has the marks of a computer-generated voice, and it is not the voice on file.";
+    if (l.fake >= 2) return "The audio has the marks of a cloned or computer-generated voice.";
+    return "No single check is conclusive, but together with the details of the call they point to a problem.";
+  }
+
+  /* ===================== API helpers ===================== */
+  async function api(path, opts) {
+    const r = await fetch(path, opts);
+    let d = null;
+    try { d = await r.json(); } catch (e) { /* not JSON */ }
+    if (!r.ok) throw new Error((d && (d.detail || d.error)) || r.statusText || "request failed");
+    return d;
+  }
+  const post = (path, body) => api(path, {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body || {}),
+  });
+
+  function toast(msg, ms = 4200) {
+    const t = document.createElement("div");
+    t.className = "toast"; t.setAttribute("role", "alert"); t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), ms);
+  }
+  function setStatus(id, html, kind) {
+    const el = $(id);
+    el.className = "status" + (id === "reg-status" ? " who" : "") + (kind ? " " + kind : "");
+    el.innerHTML = html;
+  }
+  const busy = (t) => `<span class="spin"></span><span>${t}</span>`;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  /* ===================== boot ===================== */
+  async function boot() {
+    initTheme();
+    for (let i = 0; i < 20; i++) {
+      try { S.info = await api("/api/info"); break; }
+      catch (e) { await new Promise((r) => setTimeout(r, 800)); }
+    }
+    if (!S.info) {
+      setStatus("reg-status", `${svg("stop")}<span>The VoiceGuard engine isn't responding. Is the server running?</span>`, "err");
+      toast("The VoiceGuard engine isn't responding. Is the server running?", 9000);
+      return;
+    }
+    try { S.clips = (await api("/api/demo/clips")).clips || []; } catch (e) { S.clips = []; }
+    await newSession();
+    renderClips();
+    renderZones("routine");
+    resetResult();
+    sizeCanvas(); drawTimeline();
+    coach();
+    if (S.clips.some((c) => c.id === "enrol")) {
+      // open ready to play: the sample customer's voice is already on file
+      try { await register(await fetchClip("enrol"), "enrol.wav", "sample"); } catch (e) { /* the status line says why */ }
+    } else {
+      setStatus("reg-status", `${svg("question")}<span>No customer voice is on file yet. Open “Use your own audio” below to add one.</span>`, "");
     }
   }
   async function newSession() {
-    const body = {
-      scenario: $("f-scenario").value,
-      caller_known: $("f-caller").checked,
-      amount: Number($("f-amount").value) || 0,
-    };
-    const d = await (await fetch("/api/session", {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
-    })).json();
-    SID = d.session_id;
-    $("scenario-name").textContent = d.scenario;
+    const d = await post("/api/session", contextBody());
+    S.sid = d.session_id;
   }
+  const contextBody = () => ({
+    scenario: S.scenario,
+    caller_known: $("f-known").checked,
+    amount: S.scenario === "routine" ? 0 : Number($("f-amount").value) || 0,
+  });
 
-  /* ---------- context controls ---------- */
+  /* ===================== the customer's voice on file ===================== */
+  // kind: "sample" (the sample customer), "mic" (recorded here) or "upload" (a file). Registrations
+  // run one after another, so a slow earlier one can never overwrite a newer voice.
+  let regChain = Promise.resolve();
+  function register(blob, name, kind) {
+    const run = regChain.then(() => doRegister(blob, name, kind));
+    regChain = run.catch(() => {});
+    return run;
+  }
+  async function doRegister(blob, name, kind) {
+    setStatus("reg-status", busy("Putting the voice on file…"), "busy");
+    try {
+      const fd = new FormData(); fd.append("file", blob, name);
+      const r = await fetch(`/api/session/${S.sid}/enroll`, { method: "POST", body: fd });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.detail || "That recording could not be used.");
+      S.registered = true; S.onFile = kind;
+      const secs = d.speech_seconds ?? d.seconds;
+      const who = kind === "sample" ? "The customer's real voice is on file" :
+        kind === "mic" ? "Your voice is on file" : "The voice from your recording is on file";
+      setStatus("reg-status",
+        `${svg("check")}<span><b>${who}</b> (${kind === "sample" ? "the sample customer, " : ""}${secs.toFixed(1)} s of clear speech). ` +
+        "VoiceGuard compares every caller with it." +
+        (d.short ? " That is on the short side; six seconds or more works better." : "") + "</span>",
+        d.short ? "" : "ok");
+      stopCall(true); resetResult();
+      addLog(kind === "sample" ? "The sample customer's voice is on file." : kind === "mic" ? "Put your own voice on file." : "Put the voice from a recording on file.");
+    } catch (e) {
+      S.registered = false;
+      const msg = String(e.message || e).replace(/^enrolment needs/i, "A voice needs");
+      setStatus("reg-status", `${svg("stop")}<span>${esc(msg)} Try another recording.</span>`, "err");
+    }
+  }
+  async function fetchClip(id) {
+    const r = await fetch(`/api/demo/clips/${encodeURIComponent(id)}`);
+    if (!r.ok) throw new Error("That sample is not available.");
+    return r.blob();
+  }
+  $("reg-sample").addEventListener("click", async () => {
+    try { await register(await fetchClip("enrol"), "enrol.wav", "sample"); } catch (e) { toast(e.message); }
+  });
+  $("reg-upload").addEventListener("click", () => $("reg-file").click());
+  $("reg-file").addEventListener("change", async () => {
+    const f = $("reg-file").files[0]; $("reg-file").value = "";
+    if (f) await register(f, f.name, "upload");
+  });
+  $("reg-record").addEventListener("click", async () => {
+    const b = $("reg-record"); b.disabled = true;
+    setStatus("reg-status", busy("Recording for 8 seconds. Please keep talking naturally…"), "busy");
+    try {
+      const { pcm, rate } = await captureSeconds(8);
+      await register(encodeWav(pcm, rate), "recording.wav", "mic");
+    } catch (e) {
+      setStatus("reg-status", `${svg("stop")}<span>Recording failed: ${esc(e.message || e)}. You can upload a file instead.</span>`, "err");
+    } finally { b.disabled = false; }
+  });
+
+  /* ===================== details of the call ===================== */
+  document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll(".choice").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+    S.scenario = b.dataset.scn;
+    $("amount-field").hidden = S.scenario === "routine";
+    renderZones(S.scenario);
+    pushContext();
+  }));
+  $("f-known").addEventListener("change", pushContext);
+  let amtTimer;
+  $("f-amount").addEventListener("input", () => { clearTimeout(amtTimer); amtTimer = setTimeout(pushContext, 400); });
   async function pushContext() {
-    if (!SID) return;
-    const body = {
-      scenario: $("f-scenario").value,
-      caller_known: $("f-caller").checked,
-      amount: Number($("f-amount").value) || 0,
-    };
-    await fetch(`/api/session/${SID}/context`, {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+    if (!S.sid) return;
+    try { await post(`/api/session/${S.sid}/context`, contextBody()); } catch (e) { return; }
+    if (S.run) return;                       // a call is playing: the next reading uses the new details
+    if (S.lastBlob) quickCheck(S.lastBlob, S.lastLabel, true);   // re-judge the finished call
+  }
+
+  /* ===================== sample calls ===================== */
+  const CLIP_ICON = { benign: "person", cloned_knnvc: "clone", cloned_1: "clone", cloned_2: "clone", modern_tts: "robot" };
+  function renderClips() {
+    const calls = S.clips.filter((c) => c.role === "call");
+    $("no-clips").hidden = calls.length > 0;
+    $("reg-sample").hidden = !S.clips.some((c) => c.id === "enrol");
+    [["real", "clips-real", "grp-real"], ["fake", "clips-fake", "grp-fake"]].forEach(([truth, boxId, grpId]) => {
+      const box = $(boxId); box.innerHTML = "";
+      const mine = calls.filter((c) => c.truth === truth);
+      $(grpId).hidden = mine.length === 0;
+      mine.forEach((c) => box.appendChild(clipCard(c)));
     });
-    $("scenario-name").textContent = body.scenario;
-    if (lastClip && !streaming) analyzeClip(lastClip, true);
   }
-  $("f-scenario").addEventListener("change", pushContext);
-  $("f-caller").addEventListener("change", pushContext);
-  let amtT;
-  $("f-amount").addEventListener("input", () => { clearTimeout(amtT); amtT = setTimeout(pushContext, 400); });
-
-  /* ---------- enrolment ---------- */
-  async function sendEnrol(blob, name) {
-    const fd = new FormData();
-    fd.append("file", blob, name);
-    const r = await fetch(`/api/session/${SID}/enroll`, { method: "POST", body: fd });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.detail || "enrolment failed");
-    $("enrol-pill").textContent = `enrolled · ${d.seconds.toFixed(1)}s`;
-    $("enrol-pill").classList.add("ok");
-    setStatus(
-      d.short
-        ? "Enrolled, but the sample is short — 6 s+ is more reliable."
-        : "Caller enrolled. Load or stream the call audio.",
-      d.short ? "err" : "",
-    );
-    if (lastClip && !streaming) analyzeClip(lastClip, true);
+  function clipCard(c) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "clip " + (c.truth || ""); b.dataset.id = c.id;
+    b.innerHTML = `<span class="ic">${svg(CLIP_ICON[c.id] || "person")}</span>` +
+      `<span class="txt"><b></b><span class="sub"></span></span>` +
+      `<span class="side"><span class="tag"></span><span class="dur"></span><span class="play">${svg("play", "fill")} Play</span></span><i class="bar"></i>`;
+    b.querySelector("b").textContent = c.title;
+    b.querySelector(".sub").textContent = c.text;
+    b.querySelector(".tag").textContent = c.truth === "real" ? "Real person" : "Fake voice";
+    b.querySelector(".dur").textContent = `${c.seconds.toFixed(0)} seconds`;
+    b.setAttribute("aria-label", `Play: ${c.title}. ${c.truth === "real" ? "A real person" : "A fake voice"}, ${c.seconds.toFixed(0)} seconds.`);
+    b.addEventListener("click", async () => {
+      try { await playBlob(await fetchClip(c.id), c.title, b, c.truth); } catch (e) { toast(e.message); }
+    });
+    return b;
   }
-
-  $("enrol-btn").addEventListener("click", async () => {
-    const btn = $("enrol-btn");
-    btn.disabled = true;
-    setStatus('<span class="dot busy"></span> recording 6 seconds…');
-    try {
-      const { pcm, rate } = await captureSeconds(6);
-      await sendEnrol(encodeWav(pcm, rate), "enrol.wav");
-    } catch (e) {
-      setStatus("Recording failed: " + (e.message || e) + " — try 'Enrol from a file'.", "err");
-    } finally {
-      btn.disabled = false;
-    }
-  });
-
-  $("enrol-file-btn").addEventListener("click", () => $("enrol-file").click());
-  $("enrol-file").addEventListener("change", async () => {
-    const f = $("enrol-file").files[0];
-    if (!f) return;
-    setStatus(`<span class="spin"></span> enrolling from ${f.name}…`);
-    try {
-      await sendEnrol(f, f.name);
-    } catch (e) {
-      setStatus("Enrolment failed: " + (e.message || e), "err");
-    }
-  });
-
-  /* ---------- file analysis ---------- */
-  const drop = $("drop"), fileInput = $("file");
-  drop.addEventListener("click", () => fileInput.click());
-  drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } });
-  ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
-  ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
-  drop.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) analyzeClip(f); });
-  fileInput.addEventListener("change", () => { if (fileInput.files[0]) analyzeClip(fileInput.files[0]); });
-
-  async function analyzeClip(file, quiet) {
-    lastClip = file;
-    if (streaming) stopMic();
-    if (!quiet) setStatus(`<span class="spin"></span> analysing ${file.name}…`);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const r = await fetch(`/api/session/${SID}/analyze`, { method: "POST", body: fd });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.detail || "analysis failed");
-      history.length = 0;
-      (d.clip && d.clip.smoothed ? d.clip.smoothed : [d.fused]).forEach((x) => history.push(x));
-      render(d);
-      setStatus(`Analysed ${file.name} · ${d.clip ? d.clip.duration_s.toFixed(1) + "s" : ""}`);
-    } catch (e) {
-      setStatus("Analysis failed: " + (e.message || e), "err");
-    }
+  function coach() {
+    const t = S.tried;
+    $("coach").textContent = !t.real && !t.fake
+      ? "Start with the real customer's call, then play the fake ones and compare VoiceGuard's answers."
+      : t.real && !t.fake ? "Now play one of the fake voices and compare the answer."
+      : !t.real && t.fake ? "Now play the real customer's call to see the difference."
+      : "Try the others too. “A voice cloned with a free tool” is the hardest one.";
   }
-
-  /* ---------- live mic ---------- */
-  let micDevice = "", micSilentTicks = 0, micBusy = false;
-  const micSel = $("mic-device");
-  $("mic-btn").addEventListener("click", () => (streaming ? stopMic() : startMic()));
-  micSel.addEventListener("change", async () => {
-    micDevice = micSel.value;
-    if (streaming || micBusy) { stopMic(); await new Promise((r) => setTimeout(r, 150)); startMic(); }
-  });
-
-  async function listMics() {
+  // "Try it with your own voice": put the speaker's voice on file from the microphone, then listen
+  // live. Comparing a live voice with the sample customer can only ever say "not the customer".
+  $("own-test").addEventListener("click", ownVoiceTest);
+  async function ownVoiceTest() {
+    const card = $("own-test");
+    if (card.disabled) return;
+    stopCall(true);
+    card.disabled = true;
+    const was = { html: $("reg-status").innerHTML, cls: $("reg-status").className.replace(/^status( who)?\s*/, "") };
+    setStatus("call-status", busy("Keep talking for 8 seconds, for example about what you did today…"), "busy");
+    setStatus("reg-status", busy("Listening for 8 seconds to learn your voice…"), "busy");
     try {
-      const ins = (await navigator.mediaDevices.enumerateDevices())
-        .filter((d) => d.kind === "audioinput" && d.deviceId && d.deviceId !== "default");
-      if (ins.length < 2) return;
-      const sig = ins.map((d) => d.deviceId).join("|");
-      if (micSel.dataset.sig !== sig) {
-        micSel.innerHTML = ins
-          .map((d, i) => `<option value="${d.deviceId}">${(d.label || "Microphone " + (i + 1)).replace(/["<>]/g, "")}</option>`)
-          .join("");
-        micSel.dataset.sig = sig;
+      const { pcm, rate } = await captureSeconds(8);
+      await register(encodeWav(pcm, rate), "your voice.wav", "mic");
+      if (!S.registered || S.onFile !== "mic") {
+        setStatus("call-status", `${svg("stop")}<span>Your voice could not be put on file. Try again in a quieter spot and keep talking for the full eight seconds.</span>`, "err");
+        return;
       }
-      if (micDevice && ins.some((d) => d.deviceId === micDevice)) micSel.value = micDevice;
-      $("mic-devrow").hidden = false;
-    } catch (e) { /* ignore */ }
+      $("coach").textContent = "VoiceGuard knows your voice now. Keep talking: it checks that it is still you. Then let someone else speak, or play a fake voice near the microphone.";
+      await startMic();
+    } catch (e) {
+      setStatus("reg-status", was.html, was.cls);   // whoever was on file still is
+      setStatus("call-status", `${svg("stop")}<span>Recording failed: ${esc(e.message || e)}. Allow the microphone in the address bar, or upload a recording instead.</span>`, "err");
+    } finally { card.disabled = false; }
+  }
+  $("call-upload").addEventListener("click", () => $("call-file").click());
+  // the usual slip when trying a real person: playing their call against the sample customer
+  function remindWhoIsOnFile() {
+    if (S.onFile === "sample" && !S.tipShown) {
+      S.tipShown = true;
+      toast("Tip: VoiceGuard compares the caller with the voice on file, which is the sample customer right now. To test a real person, put their own voice on file first (under “Use your own audio”).", 9000);
+    }
+  }
+  $("call-file").addEventListener("change", async () => {
+    const f = $("call-file").files[0]; $("call-file").value = "";
+    if (f) { remindWhoIsOnFile(); await playBlob(f, f.name, null, null); }
+  });
+  $("mode-live").addEventListener("click", () => setMode(true));
+  $("mode-fast").addEventListener("click", () => setMode(false));
+  function setMode(live) {
+    S.realtime = live;
+    $("mode-live").setAttribute("aria-pressed", String(live));
+    $("mode-fast").setAttribute("aria-pressed", String(!live));
+  }
+  $("f-sound").addEventListener("change", () => {
+    S.sound = $("f-sound").checked;
+    if (S.run && S.run.gain) S.run.gain.gain.value = S.sound ? 1 : 0;
+  });
+  $("stop-btn").addEventListener("click", () => { stopCall(); setStatus("call-status", "Stopped.", ""); });
+
+  // a call is starting: show the live answer panel, listening
+  function beginCall(truth) {
+    resetResult();
+    S.truth = truth || null;
+    showAnswer(true);
+    setVerdict("WAITING", null);
+    $("v-text").textContent = "VoiceGuard is listening. The first reading appears after a few seconds of speech.";
+    if (narrow()) $("answer").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  function showAnswer(on) { $("idle").hidden = on; $("live").hidden = !on; }
+
+  /* ---------- play a recording through the live path ---------- */
+  function monoOf(buf) {
+    const n = buf.length, out = new Float32Array(n), ch = buf.numberOfChannels;
+    for (let c = 0; c < ch; c++) {
+      const d = buf.getChannelData(c);
+      for (let i = 0; i < n; i++) out[i] += d[i] / ch;
+    }
+    return out;
+  }
+  async function playBlob(blob, label, cardEl, truth) {
+    stopCall(true);
+    S.lastBlob = blob; S.lastLabel = label; S.lastTruth = truth || null;
+    if (!S.registered) toast("No customer voice is on file, so the caller can't be compared. Only the sound of the voice will be checked.", 5200);
+    await post(`/api/session/${S.sid}/reset`);
+    beginCall(truth);
+    addLog(`Call started: ${label}.`);
+    if (!S.realtime) return quickCheck(blob, label, false);
+
+    let ctx, buf;
+    try {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      await ctx.resume();
+      buf = await ctx.decodeAudioData(await blob.arrayBuffer());
+    } catch (e) {
+      try { ctx && ctx.close(); } catch (e2) { /* ignore */ }
+      toast("This browser can't play that file, so it will be checked instantly instead.");
+      return quickCheck(blob, label, false);
+    }
+    const pcm = monoOf(buf), rate = buf.sampleRate, dur = buf.duration;
+    const gain = ctx.createGain(); gain.gain.value = S.sound ? 1 : 0;
+    const src = ctx.createBufferSource(); src.buffer = buf; src.connect(gain); gain.connect(ctx.destination);
+    const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/api/session/${S.sid}/stream`);
+    ws.binaryType = "arraybuffer";
+    const run = { kind: "file", ctx, src, gain, ws, timer: null, dur, t0: 0, sent: 0, card: cardEl, done: false };
+    S.run = run;
+    markPlaying(cardEl, true);
+    $("stop-btn").hidden = false;
+    setStatus("call-status", busy(`Listening to “${esc(label)}”…`), "busy");
+    setChip("live");
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ sampleRate: rate }));
+      run.t0 = ctx.currentTime;
+      src.start();
+      run.timer = setInterval(() => pump(run, pcm, rate), 40);
+    };
+    ws.onmessage = (ev) => {
+      let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (m.error) { toast("Something went wrong while checking the call."); stopCall(); return; }
+      // heard_s = how much of the call this verdict covers (the server's own audio clock)
+      onReading(m, m.heard_s != null ? Math.min(m.heard_s, dur) : Math.min(ctx.currentTime - run.t0, dur));
+      if (run.done && (m.final || (m.heard_s != null && m.heard_s >= dur - 0.35))) finishCall();
+    };
+    ws.onerror = () => { toast("The connection to VoiceGuard dropped."); stopCall(); };
+  }
+  function pump(run, pcm, rate) {
+    if (S.run !== run || run.ws.readyState !== 1) return;
+    const elapsed = run.ctx.currentTime - run.t0;
+    const target = Math.min(pcm.length, Math.floor(elapsed * rate) + 2048);
+    while (run.sent < target && (target - run.sent >= 2048 || target === pcm.length)) {
+      const end = Math.min(run.sent + 4096, target);
+      run.ws.send(pcm.slice(run.sent, end).buffer);
+      run.sent = end;
+    }
+    document.querySelectorAll(".clip.playing .bar").forEach((b) => { b.style.width = Math.min(100, 100 * elapsed / run.dur) + "%"; });
+    if (run.sent >= pcm.length && !run.done) {
+      run.done = true;
+      clearInterval(run.timer);
+      setChip("finishing");
+      // tell the server the audio is over so its last verdict covers the whole call, then wait
+      // for it (onmessage finishes the call), with a deadline so a stalled server cannot hang the page
+      try { run.ws.send(JSON.stringify({ end: true })); } catch (e) { /* the deadline covers it */ }
+      run.deadline = setTimeout(() => { if (S.run === run) finishCall(); }, 20000);
+    }
+  }
+  function finishCall() {
+    const last = S.last;
+    stopCall(true);
+    setChip("done");
+    const stopAt = S.peak && S.peak.rank === 2 ? S.peak.t : null;
+    $("tl-cap").textContent = S.flaggedAt != null
+      ? `VoiceGuard first raised a concern ${S.flaggedAt.toFixed(1)} seconds into the call` +
+        (stopAt != null ? ` and said “Stop” at ${stopAt.toFixed(1)} seconds.` : ".")
+      : "VoiceGuard raised no concern at any point in this call.";
+    if (last) {
+      const eased = S.peak && S.peak.rank > (RANK[last.action] ?? 0);
+      addLog(`Call ended. Final verdict: ${titleFor(last.action, last)}.` +
+        (eased ? ` Highest warning during the call: ${titleFor(S.peak.act, S.peak.m)}.` : ""));
+      setStatus("call-status", eased
+        ? `${svg("question")}<span>Call finished. The last reading is lower than the earlier warning, so read both (see the note in the answer).</span>`
+        : `${svg("check")}<span>Call finished. The answer shown is the final one.</span>`, eased ? "" : "ok");
+      finished();
+    }
+  }
+  // a call is over: say how VoiceGuard did on it, and what to try next
+  function finished() {
+    if (S.truth) { S.tried[S.truth] = true; coach(); }
+    renderScore();
+  }
+  function stopCall(quiet) {
+    const run = S.run; S.run = null;
+    if (run) {
+      clearInterval(run.timer); clearTimeout(run.deadline);
+      try { run.src && run.src.stop(); } catch (e) { /* not started */ }
+      try { run.ws && (run.ws.onmessage = run.ws.onerror = run.ws.onclose = null, run.ws.close()); } catch (e) { /* closed */ }
+      try { run.proc && (run.proc.onaudioprocess = null, run.proc.disconnect()); } catch (e) { /* ignore */ }
+      try { run.stream && run.stream.getTracks().forEach((t) => t.stop()); } catch (e) { /* ignore */ }
+      try { run.ctx && run.ctx.close(); } catch (e) { /* ignore */ }
+    }
+    markPlaying(null, false);
+    $("stop-btn").hidden = true;
+    $("mic-level").hidden = true;
+    $("mic-label").textContent = "Listen on the microphone";
+    if (!quiet) setChip(S.last ? "done" : null);
+  }
+  function markPlaying(card, on) {
+    document.querySelectorAll(".clip").forEach((c) => {
+      c.classList.toggle("playing", on && c === card);
+      const b = c.querySelector(".bar"); if (b && !(on && c === card)) b.style.width = "0";
+    });
   }
 
-  async function startMic() {
-    if (micBusy || streaming) return;
-    micBusy = true;
-    let stream;
+  /* ---------- instant check (no playback) ---------- */
+  async function quickCheck(blob, label, quiet) {
+    if (!quiet) setStatus("call-status", busy(`Checking “${esc(label)}”…`), "busy");
     try {
-      const audio = micDevice ? { deviceId: { exact: micDevice } } : true;
-      stream = await navigator.mediaDevices.getUserMedia({ audio });
+      const fd = new FormData(); fd.append("file", blob, label);
+      const r = await fetch(`/api/session/${S.sid}/analyze`, { method: "POST", body: fd });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.detail || "That recording could not be checked.");
+      S.history = []; S.flaggedAt = null; S.peak = null; S.truth = S.lastTruth;
+      showAnswer(true);
+      onReading(d, null);
+      setChip("done");
+      $("tl-cap").textContent = "An instant check gives the final verdict only. Choose “In real time” to watch it develop.";
+      if (!quiet) setStatus("call-status", `${svg("check")}<span>Checked “${esc(label)}”.</span>`, "ok");
+      if (!quiet) addLog(`Checked instantly. Verdict: ${titleFor(d.action, d)}.`);
+      finished();
     } catch (e) {
-      micBusy = false;
-      const n = (e && e.name) || "";
-      setStatus(
-        n === "NotAllowedError"
-          ? "Microphone blocked — allow it via the address-bar icon, then click again."
-          : "Could not open the microphone — another app or tab may be using it.",
-        "err",
-      );
-      return;
+      setStatus("call-status", `${svg("stop")}<span>${esc(e.message || e)}</span>`, "err");
     }
-    const track = stream.getAudioTracks()[0];
-    if (!track || track.readyState !== "live") {
-      stream.getTracks().forEach((t) => t.stop());
-      micBusy = false;
-      setStatus("The microphone did not start. Close other apps/tabs using it and try again.", "err");
-      return;
-    }
-    if (!micDevice) {
-      try { const s = track.getSettings && track.getSettings(); if (s && s.deviceId) micDevice = s.deviceId; } catch (e) {}
-    }
-    track.onmute = () => { if (streaming) setStatus("The microphone was muted — another app took it.", "err"); };
+  }
 
-    micStream = stream;
-    streaming = true;
-    lastClip = null;
-    history.length = 0;
-    micSilentTicks = 0;
-    $("mic-btn").textContent = "Stop microphone";
-    $("mic-btn").classList.add("stop");
-    $("mic-live").hidden = false;
-    listMics();
-    setStatus('<span class="dot busy"></span> starting microphone…');
-
-    // native sample rate — forcing 16 kHz makes a hardware mic come through silent
-    ac = new (window.AudioContext || window.webkitAudioContext)();
-    try { await ac.resume(); } catch (e) {}
-    if (ac.state !== "running") {
-      setStatus("Audio is paused by the browser — click the page, then try again.", "err");
-      stopMic();
+  /* ---------- live microphone ---------- */
+  $("call-mic").addEventListener("click", () => (S.run && S.run.kind === "mic" ? stopCall() : startMic()));
+  async function startMic() {
+    stopCall(true);
+    if (!S.registered) toast("No customer voice is on file, so the caller can't be compared. Only the sound of the voice will be checked.", 5200);
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia(MIC); }
+    catch (e) {
+      setStatus("call-status", `${svg("stop")}<span>The microphone is blocked or in use by another app. Allow it in the address bar, or use a recording instead.</span>`, "err");
       return;
     }
-    const src = ac.createMediaStreamSource(stream);
-    const proc = ac.createScriptProcessor(4096, 1, 1);
-    const mute = ac.createGain(); mute.gain.value = 0;
-    micProc = proc;
-    let acc = [], n = 0;
+    await post(`/api/session/${S.sid}/reset`);
+    S.lastBlob = null; S.lastTruth = null;
+    remindWhoIsOnFile();
+    beginCall(null);
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    try { await ctx.resume(); } catch (e) { /* ignore */ }
+    const srcNode = ctx.createMediaStreamSource(stream);
+    const proc = ctx.createScriptProcessor(4096, 1, 1);
+    const mute = ctx.createGain(); mute.gain.value = 0;
+    const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/api/session/${S.sid}/stream`);
+    ws.binaryType = "arraybuffer";
+    const run = { kind: "mic", ctx, ws, proc, stream, t0: performance.now() };
+    S.run = run;
     proc.onaudioprocess = (e) => {
       const d = e.inputBuffer.getChannelData(0);
-      acc.push(new Float32Array(d)); n += d.length;
-      if (n >= 4096 && ws && ws.readyState === 1) {
-        const out = new Float32Array(n); let o = 0;
-        for (const a of acc) { out.set(a, o); o += a.length; }
-        acc = []; n = 0; ws.send(out.buffer);
-      }
+      if (ws.readyState === 1) ws.send(new Float32Array(d).buffer);
+      let pk = 0; for (let i = 0; i < d.length; i += 8) pk = Math.max(pk, Math.abs(d[i]));
+      $("mic-level-i").style.width = Math.min(100, Math.sqrt(pk) * 130) + "%";
     };
-    src.connect(proc); proc.connect(mute); mute.connect(ac.destination);
-
-    ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/api/session/${SID}/stream`);
-    ws.binaryType = "arraybuffer";
-    ws.onopen = () => { micBusy = false; ws.send(JSON.stringify({ sampleRate: ac.sampleRate })); setStatus('<span class="dot"></span> streaming the call…'); };
+    srcNode.connect(proc); proc.connect(mute); mute.connect(ctx.destination);
+    ws.onopen = () => ws.send(JSON.stringify({ sampleRate: ctx.sampleRate }));
     ws.onmessage = (ev) => {
-      const m = JSON.parse(ev.data);
-      if (m.error) { setStatus("Stream error: " + m.error, "err"); stopMic(); return; }
-      const lvl = m.level ?? 0;
-      $("mic-inlevel").style.width = Math.min(100, Math.sqrt(lvl) * 160) + "%";
-      $("mic-inlevel").classList.toggle("silent", lvl < 0.004);
-      micSilentTicks = lvl < 0.002 ? micSilentTicks + 1 : 0;
-      if (micSilentTicks >= 6) {
-        setStatus('<span class="dot busy"></span> no sound is reaching the model — check the input above, or close other apps using the mic', "err");
-      } else if (m.warming) {
-        setStatus('<span class="dot busy"></span> building up the first few seconds…');
-      } else {
-        setStatus('<span class="dot"></span> streaming the call…');
-      }
-      history.push(m.fused);
-      if (history.length > 160) history.shift();
-      render(m);
+      let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (m.error) { toast("Something went wrong while checking the call."); stopCall(); return; }
+      onReading(m, m.heard_s != null ? m.heard_s : (performance.now() - run.t0) / 1000);
     };
-    ws.onclose = () => { if (streaming) stopMic(); };
-    ws.onerror = () => setStatus("Stream connection lost.", "err");
-  }
-  function stopMic() {
-    streaming = false;
-    micBusy = false;
-    try { if (ws) { ws.onclose = ws.onmessage = ws.onerror = null; ws.close(); } } catch (e) {}
-    try { micProc && (micProc.onaudioprocess = null, micProc.disconnect()); } catch (e) {}
-    try { micStream && micStream.getTracks().forEach((t) => t.stop()); } catch (e) {}
-    try { ac && ac.close(); } catch (e) {}
-    ws = micProc = micStream = ac = null;
-    micSilentTicks = 0;
-    $("mic-btn").textContent = "Use microphone instead";
-    $("mic-btn").classList.remove("stop");
-    $("mic-live").hidden = true;
-    $("mic-inlevel").style.width = "0";
-    setStatus("Microphone stopped.");
+    ws.onerror = () => { toast("The connection to VoiceGuard dropped."); stopCall(); };
+    $("mic-label").textContent = "Stop listening";
+    $("stop-btn").hidden = false; $("mic-level").hidden = false;
+    setStatus("call-status", busy("Listening on the microphone. Speak, or play a voice near it…"), "busy");
+    setChip("live"); addLog("Listening on the microphone.");
   }
 
-  /* ---------- render ---------- */
-  function render(d) {
-    const act = d.action || "ALLOW";
-    const dec = $("decision");
-    dec.className = "decision " + act.toLowerCase();
-    $("dec-icon").textContent = { ALLOW: "✓", VERIFY: "?", ESCALATE: "!" }[act] || "·";
-    $("dec-action").textContent = { ALLOW: "ALLOW", VERIFY: "VERIFY CALLER", ESCALATE: "ESCALATE" }[act];
-    $("dec-rec").textContent = d.recommendation || "";
-    $("dec-score").textContent = pctInt(d.fused);
-    updateAlert(act, d);
-    renderLatency(d);
+  /* ===================== rendering ===================== */
+  function resetResult() {
+    S.history = []; S.flaggedAt = null; S.last = null; S.peak = null; S.rows = null; S.truth = null;
+    S.ackedRank = -1;
+    showAnswer(false);
+    $("peak").hidden = true; $("score").hidden = true;
+    setVerdict("IDLE", null);
+    $("v-title").textContent = "Listening…";
+    $("v-text").textContent = "";
+    $("v-badge").innerHTML = svg("ear");
+    setChip(null);
+    $("track").className = "track3 idle"; $("mark").style.left = "0%";
+    $("m-num").textContent = "no call yet";
+    $("todo").hidden = true; $("ack-row").hidden = true;
+    renderFinds(null);
+    $("tl-cap").textContent = "The line draws itself as the call plays. Colours show where it turns from genuine to double-check to stop.";
+    drawTimeline();
+    fillTech(null);
+  }
+  // VoiceGuard never says "Stop" on a reading built from under ~4 s of audio: the meter can be
+  // deep in the red while the verdict is held at "Double-check". Say so instead of leaving a
+  // red meter next to an amber headline unexplained.
+  const isEarly = (m) => !!m && m.action !== "WAITING" && !!(m.provisional || m.warming);
+  const isCapped = (m) => isEarly(m) && m.action === "VERIFY" && m.fused >= thresholds(m.scenario || S.scenario)[1];
+  const todoFor = (action, m) => isCapped(m)
+    ? "Treat this as serious. Ask a security question now, and if the caller can't answer it, end the call and phone the customer back on their registered number."
+    : (VERDICT[action] || {}).todo || "";
+  function setVerdict(action, m, rows) {
+    const v = VERDICT[action];
+    const box = $("verdict");
+    box.className = "verdict " + (v ? v.cls : "");
+    if (!v) return;
+    $("v-badge").innerHTML = svg(v.icon);
+    $("v-title").textContent = titleFor(action, m);
+    let text = action === "ESCALATE" && m ? stopText(m) : v.text, todo = v.todo, todoCls = v.cls;
+    if (action === "WAITING" && m && m.quality && m.quality.reason) {
+      text = "Not enough clear speech yet: " + m.quality.reason + ".";
+    }
+    if (action === "ALLOW" && rows && rows.some((r) => r[1] === "warn" || r[1] === "bad")) {
+      // "no signs" would contradict a check that found some
+      text = "No strong red flags, but at least one check showed a mild warning (see below). Stay alert.";
+      todo = "Carry on, but stay alert. Ask a security question if the request changes or anything sounds off.";
+      todoCls = "warn";
+    }
+    if (isCapped(m)) {
+      text = "The warning signs are strong, but the call is still too short for VoiceGuard to be certain.";
+      todo = todoFor(action, m);
+      todoCls = "bad";
+    }
+    if (S.peak && S.peak.rank === 2 && action !== "ESCALATE" && !isCapped(m)) {
+      // a stop warning was already shown; an easing reading must not read as "all clear"
+      todo = "A stop warning was raised earlier in this call, so do not treat it as cleared. Ask a security question only the real customer could answer, or phone the customer back on their registered number.";
+      todoCls = "bad";
+    }
+    $("v-text").textContent = text;
+    $("todo").hidden = !todo;
+    $("todo").className = "todo " + todoCls;
+    $("todo-text").textContent = todo;
+    $("meter-note").textContent = isCapped(m)
+      ? "The meter is in the red zone, but VoiceGuard won't say “Stop” on less than about four seconds of audio."
+      : "A relative score of how far this call is from a normal one, not the chance that it is fake.";
+  }
+  function setChip(kind) {
+    const c = $("chips"); c.innerHTML = "";
+    const add = (t, cls) => { const s = document.createElement("span"); s.className = "chip " + (cls || ""); s.textContent = t; c.appendChild(s); };
+    if (kind === "live") add("Live: updating as the call plays", "live");
+    if (kind === "finishing") add("Checking the last few seconds…", "live");
+    if (kind === "done") add("Call finished");
+    if (isEarly(S.last)) add(S.run ? "Early reading: still confirming" : "Short call: early reading only");
+  }
 
-    setSig("spoof", d.spoof);
-    setSig("speaker", d.speaker);
-    setSig("prosody", d.prosody);
-    setSig("context", d.context);
-
-    const ul = $("reasons");
-    ul.innerHTML = "";
-    (d.reasons || []).forEach((r) => {
-      const li = document.createElement("li");
-      li.textContent = r;
-      ul.appendChild(li);
+  function bandOf(p, lo, hi) { return p == null ? "idle" : p >= hi ? "bad" : p >= lo ? "warn" : "ok"; }
+  function drawFinds(rows) {
+    const box = $("finds"); box.innerHTML = "";
+    rows.forEach(([q, cls, a, d]) => {
+      const el = document.createElement("div"); el.className = "find";
+      el.innerHTML = `<span class="light ${cls}"></span><div><div class="q"></div><div class="a"></div><div class="d"></div></div>`;
+      el.querySelector(".q").textContent = q; el.querySelector(".a").textContent = a; el.querySelector(".d").textContent = d;
+      box.appendChild(el);
     });
+  }
+  function renderFinds(m) {
+    if (!m) {   // before the first reading: say what each check does
+      const what = [
+        ["Does the voice match the registered customer?", S.registered ? "Compares the caller with the voice on file." : "Compares the caller with the customer's voice (none is on file yet)."],
+        ["Are there signs of a computer-generated voice?", "Listens for the faint marks that cloning and text-to-speech tools leave."],
+        ["Is anything about the call itself unusual?", "Looks at the caller's number and the size of any payment."],
+        ["Is the audio clear?", "Notices noise, echo or distortion, and allows for it."],
+      ];
+      const rows = what.map(([q, d]) => [q, "idle", "Listening…", d]);
+      drawFinds(rows);
+      return rows;
+    }
+    const rows = [];
+    // 1. voice match
+    {
+      let cls = "idle", a = "Waiting for the first words", d = "";
+      if (!S.registered) { a = "No voice on file"; d = "Put the customer's real voice on file so the caller can be compared."; }
+      else if (m && m.speaker != null) {
+        const r = m.speaker, lv = m.evidence_level ? LV[m.evidence_level.voice_mismatch] : (r < 0.55 ? 0 : r < 0.72 ? 1 : 3);
+        if (lv === 0) { cls = "ok"; a = "Matches the registered customer"; d = "The caller sounds like the person whose voice is on file."; }
+        else if (lv === 1) { cls = "warn"; a = "Only a partial match"; d = "The caller sounds somewhat like the registered customer, but not convincingly."; }
+        else { cls = "bad"; a = "Does not match the registered customer"; d = "The caller's voice is noticeably different from the one on file. If this is the right person, put their own voice on file first."; }
+      }
+      rows.push(["Does the voice match the registered customer?", cls, a, d]);
+    }
+    // 2. computer-generated clues
+    {
+      let cls = "idle", a = "Waiting for the first words", d = "";
+      const p = m ? (m.evidence ? m.evidence.synthetic : m.spoof) : null;
+      if (p != null) {
+        const lv = m.evidence_level ? LV[m.evidence_level.synthetic] : (p >= 0.6 ? 3 : p >= 0.3 ? 1 : 0);
+        if (lv >= 3) { cls = "bad"; a = "Strong signs"; d = "The audio has the marks of a computer-generated or cloned voice."; }
+        else if (lv === 2) { cls = "warn"; a = "Some signs, worth a check"; d = "The audio has marks that can come from synthetic speech. Compressed or noise-suppressed recordings, such as voice messages, can show them too."; }
+        else if (lv === 1) { cls = "warn"; a = "A few signs"; d = "A few marks that can come from synthetic speech, but not conclusive."; }
+        else { cls = "ok"; a = "None found"; d = "Nothing in the sound suggests a computer-generated voice. Some newer cloning tools are hard to hear this way, so the voice match matters too."; }
+      }
+      rows.push(["Are there signs of a computer-generated voice?", cls, a, d]);
+    }
+    // 3. the call itself
+    {
+      let cls = "idle", a = "Not yet", d = "";
+      if (m) {
+        const cs = m.context_state || {}, c = m.context || 0, parts = [];
+        if (cs.caller_known === false) parts.push("the number isn't a saved contact");
+        if ((cs.amount || 0) >= 5000) parts.push(`₹${Math.round(cs.amount).toLocaleString("en-IN")} is being discussed`);
+        if (cs.prior_flags) parts.push(`${cs.prior_flags} earlier warning${cs.prior_flags > 1 ? "s" : ""} on this caller`);
+        if (!parts.length) { cls = "ok"; a = "Nothing unusual"; d = "A known number and no large amount."; }
+        else { cls = c >= 0.5 ? "bad" : "warn"; a = parts[0][0].toUpperCase() + parts[0].slice(1); d = parts.length > 1 ? "Also: " + parts.slice(1).join("; ") + "." : "This makes VoiceGuard more careful."; }
+      }
+      rows.push(["Is anything about the call itself unusual?", cls, a, d]);
+    }
+    // 4. audio quality
+    {
+      let cls = "idle", a = "Not yet", d = "";
+      if (m) {
+        const q = m.quality || {}, notes = m.audio_notes || [];
+        if (q.usable === false) { a = "Not enough clear speech yet"; d = q.reason ? q.reason.charAt(0).toUpperCase() + q.reason.slice(1) + "." : ""; }
+        else if (notes.length) { cls = "warn"; a = notes.length > 1 ? "Some problems with the line" : "A problem with the line"; d = notes.join(" ") + " VoiceGuard allows for this, but it makes the call harder to judge."; }
+        else { cls = "ok"; a = "Clear"; d = "No noise, echo or distortion to speak of."; }
+      }
+      rows.push(["Is the audio clear?", cls, a, d]);
+    }
+    drawFinds(rows);
+    return rows;
+  }
 
-    drawSpark();
-    if (d.audit_event) prependAudit(d.audit_event);
+  // The highest warning VoiceGuard confirmed during this call, so one that eases is never lost.
+  // Early readings (a second or two of speech) are left out: they can blip on a genuine call
+  // and settle by themselves, and a note about every blip would train people to ignore notes.
+  function notePeak(act, m, t) {
+    const rk = RANK[act];
+    if (rk >= 1 && !isEarly(m) && (!S.peak || rk > S.peak.rank)) S.peak = { rank: rk, act, t: t != null ? t : 0, m };
   }
-  function renderLatency(d) {
-    const el = $("latency-line");
-    if (d.speech_onset_s == null) { el.hidden = true; return; }
+  function renderPeak(act) {
+    const el = $("peak"), p = S.peak, cur = RANK[act] ?? 0;
+    if (!p || act === "WAITING" || p.rank <= cur) { el.hidden = true; return; }
+    const when = p.t.toFixed(1) + " s";
+    el.className = "peak" + (p.rank === 2 ? " bad" : "");
+    el.textContent = p.rank === 2
+      ? `Earlier in this call, at ${when}, VoiceGuard said “${titleFor("ESCALATE", p.m)}”. The latest reading is lower, but a warning that fades is not the same as a clear call: check before you rely on it.`
+      : `Earlier in this call, at ${when}, VoiceGuard said “${VERDICT.VERIFY.title}”. The latest reading is lower.`;
     el.hidden = false;
-    if (d.first_confirmed_read_s != null) {
-      el.className = "latency-line";
-      el.innerHTML = `Confirmed read <b>${d.first_confirmed_read_s.toFixed(1)}s</b> after the caller started talking.`;
-    } else {
-      el.className = "latency-line provisional";
-      el.innerHTML = `Early read in progress — confirming over the next few seconds. No escalation until confirmed.`;
-    }
   }
-  const RANK = { ALLOW: 0, VERIFY: 1, ESCALATE: 2 };
-  function updateAlert(act, d) {
-    const card = $("alert-card");
-    if (act === "ALLOW") { card.hidden = true; lastAction = act; return; }
-    // rising to a higher alert level -> (re)raise, un-acknowledged
-    if ((RANK[act] || 0) > (RANK[lastAction] || 0) || card.hidden) {
-      card.hidden = false;
-      card.classList.remove("ack");
-      $("alert-line").textContent =
-        (act === "ESCALATE" ? "ESCALATE — " : "Verify the caller — ") + (d.recommendation || "");
-      $("ack-btn").disabled = false;
-    }
-    lastAction = act;
+  // "I've seen this": offered while a warning stands, and again if a stronger one follows
+  function warnLevel(act) { return Math.max(RANK[act] ?? 0, S.peak ? S.peak.rank : 0); }
+  function renderAck(act) {
+    const level = warnLevel(act);
+    const show = level >= 1 && !$("todo").hidden;
+    $("ack-row").hidden = !show;
+    if (!show) return;
+    const done = S.ackedRank >= level;
+    $("ack-btn").hidden = done; $("ack-done").hidden = !done;
   }
   $("ack-btn").addEventListener("click", async () => {
-    $("ack-btn").disabled = true;
+    const btn = $("ack-btn"); btn.disabled = true;
     try {
-      const r = await (await fetch(`/api/session/${SID}/acknowledge`, { method: "POST" })).json();
-      $("alert-card").classList.add("ack");
-      $("alert-line").textContent = "Acknowledged by the agent.";
-      if (r.audit_event) prependAudit(r.audit_event);
-    } catch (e) {
-      $("ack-btn").disabled = false;
-    }
+      const r = await post(`/api/session/${S.sid}/acknowledge`);
+      const act = (S.last || {}).action;
+      S.ackedRank = warnLevel(act);
+      renderAck(act);
+      addLog("The agent acknowledged the warning.");
+      if (r.audit_event) S.auditLines.unshift(JSON.stringify({ time: r.audit_event.utc, action: r.audit_event.action }, null, 1));
+      fillTech(S.last);
+    } catch (e) { toast("Could not record that. Try again."); }
+    finally { btn.disabled = false; }
   });
 
-  function prependAudit(e) {
-    auditCount += 1;
-    $("audit-meta").textContent =
-      `${auditCount} audit event${auditCount === 1 ? "" : "s"} this call · feature-only — no audio, transcript or voiceprint stored`;
-    const row = JSON.stringify(
-      { utc: e.utc, action: e.action, fused: e.fused, signals: e.signals, reasons: e.reasons },
-      null, 1,
-    );
-    $("audit-box").textContent = row + "\n\n" + $("audit-box").textContent;
+  // how VoiceGuard did, for the sample calls whose truth is known
+  function renderScore() {
+    const el = $("score"), t = S.truth, last = S.last;
+    if (!t || !last || last.action === "WAITING") { el.hidden = true; return; }
+    const fin = RANK[last.action] ?? 0, pk = S.peak ? S.peak.rank : 0, at = S.peak ? S.peak.t.toFixed(1) : "";
+    let cls, icon, head, body;
+    if (t === "fake") {
+      if (fin >= 1) { cls = "ok"; icon = "check"; head = "Caught"; body = "This call was a fake voice, and VoiceGuard flagged it."; }
+      else if (pk >= 1) { cls = "warn"; icon = "question"; head = "Partly caught"; body = `This call was a fake voice. VoiceGuard warned at ${at} s, then eased off as the call went on.`; }
+      else { cls = "bad"; icon = "stop"; head = "Missed"; body = "This call was a fake voice, and VoiceGuard let it through. The closest clones can do this, which is why a person stays in charge."; }
+    } else if (fin === 0 && pk === 0) { cls = "ok"; icon = "check"; head = "Correct"; body = "This was the real customer, and VoiceGuard recognised them."; }
+    else if (fin === 0) { cls = "warn"; icon = "question"; head = "Correct in the end"; body = `This was the real customer. VoiceGuard doubted them at ${at} s, then cleared them.`; }
+    else { cls = "bad"; icon = "stop"; head = "False alarm"; body = "This was the real customer, but VoiceGuard doubted them. A noisy line or an unusual voice can cause this."; }
+    el.className = "score " + cls;
+    el.innerHTML = `${svg(icon)}<div><b></b><span></span></div>`;
+    el.querySelector("b").textContent = head;
+    el.querySelector("span").textContent = body;
+    el.hidden = false;
   }
 
-  function setSig(name, v) {
-    const has = v != null;
-    $(`sig-${name}-val`).textContent = has ? pctInt(v) : "—";
-    const fill = $(`sig-${name}-fill`);
-    fill.className = has ? band(v) : "";
-    fill.style.width = has ? Math.max(2, v * 100) + "%" : "0";
-    $(`sig-${name}`).classList.toggle("muted", !has);
+  function onReading(m, t) {
+    S.last = m;
+    const act = m.action || "ALLOW";
+    notePeak(act, m, t);
+    const rows = S.rows = renderFinds(m);
+    setVerdict(act, m, rows);
+    renderPeak(act);
+    renderAck(act);
+    setMeter(m);
+    setChip(S.run ? (S.run.done ? "finishing" : "live") : "done");
+    if (t != null && act !== "WAITING") {
+      S.history.push({ t, fused: m.fused, action: act });
+      if (S.flaggedAt == null && (act === "VERIFY" || act === "ESCALATE")) S.flaggedAt = t;
+    } else if (t == null && act !== "WAITING") {
+      S.history = [{ t: 0, fused: m.fused, action: act }];
+      if (act === "VERIFY" || act === "ESCALATE") S.flaggedAt = 0;
+    }
+    drawTimeline();
+    if (m.audit_event) {
+      const top = rows.filter((r) => r[1] === "bad" || r[1] === "warn")[0];
+      addLog(`Verdict changed to “${titleFor(m.audit_event.action || act, m)}”` + (top ? ` (${top[2].toLowerCase()})` : "") + ".");
+      S.auditLines.unshift(JSON.stringify({ time: m.audit_event.utc, action: m.audit_event.action, risk: m.audit_event.fused, reasons: m.audit_event.reasons }, null, 1));
+      S.auditLines = S.auditLines.slice(0, 6);
+    }
+    fillTech(m);
   }
 
-  /* ---------- sparkline ---------- */
-  const spark = $("spark"), sc = spark.getContext("2d");
-  function sizeSpark() {
-    const r = window.devicePixelRatio || 1;
-    const w = spark.clientWidth || 720, h = spark.clientHeight || 96;
-    spark.width = w * r; spark.height = h * r; sc.setTransform(r, 0, 0, r, 0, 0);
+  /* ---------- risk meter ---------- */
+  function thresholds(scn) {
+    const t = S.info && S.info.scenarios && S.info.scenarios[scn];
+    return t ? [t.check_from, t.stop_from] : [0.55, 0.75];
   }
-  window.addEventListener("resize", () => { sizeSpark(); drawSpark(); });
-  sizeSpark();
-  function drawSpark() {
-    const css = getComputedStyle(document.body);
-    const c = (v) => css.getPropertyValue(v).trim() || "#888";
-    const w = spark.clientWidth || 720, h = spark.clientHeight || 96;
-    sc.clearRect(0, 0, w, h);
-    const Y = (r) => (1 - r) * (h - 8) + 4;
-    sc.font = '10px "IBM Plex Mono", monospace'; sc.textAlign = "left";
-    [[TH.genuine, c("--good")], [TH.synthetic, c("--bad")]].forEach(([r, col]) => {
-      sc.strokeStyle = col; sc.globalAlpha = 0.3; sc.setLineDash([3, 3]); sc.lineWidth = 1;
-      sc.beginPath(); sc.moveTo(0, Y(r)); sc.lineTo(w, Y(r)); sc.stroke();
+  function renderZones(scn) {
+    const [w1, w2] = thresholds(scn);
+    const tr = $("track");
+    tr.style.setProperty("--w1", w1 * 100 + "%"); tr.style.setProperty("--w2", w2 * 100 + "%");
+    const z = $("zones"); z.innerHTML = "";
+    [[w1 / 2, ZONE_NAMES[0]], [(w1 + w2) / 2, ZONE_NAMES[1]], [(w2 + 1) / 2, ZONE_NAMES[2]]].forEach(([x, name]) => {
+      const s = document.createElement("span"); s.style.left = x * 100 + "%"; s.textContent = name; z.appendChild(s);
     });
-    sc.setLineDash([]); sc.globalAlpha = 1;
-    if (history.length < 2) {
-      sc.fillStyle = c("--ink-3");
-      sc.fillText("risk timeline appears here once a call is loaded", 6, h / 2);
+    drawTimeline();
+  }
+  function setMeter(m) {
+    const [w1, w2] = thresholds(m.scenario || S.scenario);
+    const r = m.fused;
+    $("mark").style.left = Math.max(0, Math.min(1, r)) * 100 + "%";
+    const cls = m.action === "WAITING" ? "idle" : r >= w2 ? "bad" : r >= w1 ? "warn" : "ok";
+    $("track").className = "track3 " + cls;
+    $("m-num").textContent = m.action === "WAITING" ? "not judged yet" : `${Math.round(r * 100)} out of 100`;
+  }
+
+  /* ---------- activity log + technical details ---------- */
+  function addLog(text) {
+    const li = document.createElement("li");
+    const t = new Date();
+    li.innerHTML = "<time></time><span></span>";
+    li.querySelector("time").textContent = t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    li.querySelector("span").textContent = text;
+    $("log").prepend(li);
+    while ($("log").children.length > 40) $("log").lastChild.remove();
+  }
+  function fillTech(m) {
+    const info = S.info || {};
+    const f = (v, d = 3) => (v == null ? "n/a" : typeof v === "number" ? v.toFixed(d) : v);
+    const rows = [
+      ["Detector", info.model || "…"], ["Running on", info.device || "…"],
+      ["Decision model", info.learned_fusion ? "learned, channel-aware" : "hand-set weights"],
+    ];
+    if (m) rows.push(
+      ["Risk level (0 to 1)", f(m.fused)], ["Instant reading (before smoothing)", f(m.instant_fused)],
+      ["Voice similarity (cosine)", f(m.similarity)], ["Voice-mismatch risk", f(m.speaker)],
+      ["Detector score (raw)", f(m.spoof)],
+      ["Evidence: synthetic / voice mismatch", m.evidence ? `${f(m.evidence.synthetic)} / ${f(m.evidence.voice_mismatch)}` : "n/a"],
+      ["Call-details risk", f(m.context)], ["Clear speech heard", m.quality ? `${f(m.quality.speech_s, 1)} s` : "n/a"],
+      ["Audio check", m.quality ? m.quality.status : "n/a"], ["Server reasons", (m.reasons || []).join(" | ") || "none"],
+      ["Recording descriptors", m.channel ? Object.entries(m.channel).map(([k, v]) => k + " " + v).join(", ") : "n/a"],
+    );
+    $("tech").innerHTML = rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("");
+    $("audit").textContent = S.auditLines.join("\n\n") || "No decision records yet.";
+  }
+
+  $("copy-tech").addEventListener("click", async () => {
+    const rows = [...document.querySelectorAll("#tech tr")].map((tr) => tr.children[0].textContent + ": " + tr.children[1].textContent);
+    const m = S.last;
+    const extra = m ? [
+      "action: " + m.action, "heard_s: " + (m.heard_s ?? "n/a"), "provisional: " + !!(m.provisional || m.warming),
+      "evidence_level: " + JSON.stringify(m.evidence_level), "audio_notes: " + JSON.stringify(m.audio_notes || []),
+      "recording descriptors: " + JSON.stringify(m.channel || null),
+    ] : [];
+    const text = ["VoiceGuard details (numbers only, no audio)", new Date().toISOString(), "voice on file: " + (S.onFile || "none"),
+      "kind of call: " + S.scenario, ...rows, ...extra].join("\n");
+    try { await navigator.clipboard.writeText(text); $("copy-note").textContent = "Copied. Paste it into the chat."; }
+    catch (e) { $("copy-note").textContent = "Could not copy: select the table and copy it by hand."; }
+  });
+
+  /* ---------- timeline ---------- */
+  const cv = $("tl"), cx = cv.getContext("2d");
+  function sizeCanvas() {
+    const r = window.devicePixelRatio || 1, w = cv.clientWidth || 600, h = cv.clientHeight || 190;
+    cv.width = w * r; cv.height = h * r; cx.setTransform(r, 0, 0, r, 0, 0);
+  }
+  window.addEventListener("resize", () => { sizeCanvas(); drawTimeline(); });
+  $("more-detail").addEventListener("toggle", () => { if ($("more-detail").open) { sizeCanvas(); drawTimeline(); } });
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim() || "#888"; }
+  function drawTimeline() {
+    const w = cv.clientWidth || 600, h = cv.clientHeight || 190;
+    cx.clearRect(0, 0, w, h);
+    const [w1, w2] = thresholds((S.last && S.last.scenario) || S.scenario);
+    const L = 34, R = 10, T = 10, B = 24, pw = w - L - R, ph = h - T - B;
+    const Y = (r) => T + (1 - r) * ph;
+    // zones
+    [[0, w1, "--ok-line"], [w1, w2, "--warn-line"], [w2, 1, "--bad-line"]].forEach(([a, b, col]) => {
+      cx.globalAlpha = 0.55; cx.fillStyle = css(col); cx.fillRect(L, Y(b), pw, Y(a) - Y(b));
+    });
+    cx.globalAlpha = 1;
+    cx.fillStyle = css("--ink-3"); cx.font = "11px system-ui, sans-serif"; cx.textAlign = "right";
+    [[w1 / 2, "genuine"], [(w1 + w2) / 2, "check"], [(w2 + 1) / 2, "stop"]].forEach(([r, txt]) => cx.fillText(txt, L - 4, Y(r) + 4));
+    const hist = S.history;
+    const dur = (S.run && S.run.dur) || Math.max(10, hist.length ? hist[hist.length - 1].t + 1 : 10);
+    const X = (t) => L + (Math.min(t, dur) / dur) * pw;
+    cx.textAlign = "center"; cx.fillStyle = css("--ink-3");
+    const step = dur > 40 ? 10 : dur > 16 ? 5 : 2;
+    for (let t = 0; t <= dur; t += step) cx.fillText(t + " s", X(t), h - 7);
+    if (!hist.length) {
+      cx.textAlign = "center"; cx.fillStyle = css("--ink-3"); cx.font = "13px system-ui, sans-serif";
+      cx.fillText("Play a call to see the risk level appear here", L + pw / 2, T + ph / 2);
       return;
     }
-    const n = history.length, dx = w / Math.max(n - 1, 1);
-    const last = history[n - 1];
-    const col = last >= TH.synthetic ? c("--bad") : last <= TH.genuine ? c("--good") : c("--warn");
-    sc.beginPath(); sc.moveTo(0, h);
-    history.forEach((r, i) => sc.lineTo(i * dx, Y(r)));
-    sc.lineTo((n - 1) * dx, h); sc.closePath();
-    sc.fillStyle = col; sc.globalAlpha = 0.14; sc.fill();
-    sc.globalAlpha = 1; sc.strokeStyle = col; sc.lineWidth = 2; sc.lineJoin = "round";
-    sc.beginPath();
-    history.forEach((r, i) => (i ? sc.lineTo(i * dx, Y(r)) : sc.moveTo(0, Y(r))));
-    sc.stroke();
-    sc.fillStyle = col; sc.beginPath(); sc.arc((n - 1) * dx, Y(last), 3, 0, 7); sc.fill();
+    const last = hist[hist.length - 1];
+    const zoneCol = (r) => css(r >= w2 ? "--bad" : r >= w1 ? "--warn" : "--ok");
+    const col = zoneCol(last.fused);
+    cx.lineWidth = 3; cx.lineJoin = "round"; cx.lineCap = "round";
+    for (let i = 1; i < hist.length; i++) {     // each stretch is coloured by where it ended
+      cx.strokeStyle = zoneCol(hist[i].fused); cx.beginPath();
+      cx.moveTo(X(hist[i - 1].t), Y(hist[i - 1].fused)); cx.lineTo(X(hist[i].t), Y(hist[i].fused)); cx.stroke();
+    }
+    if (S.flaggedAt != null) {
+      cx.setLineDash([4, 4]); cx.strokeStyle = css("--ink-2"); cx.lineWidth = 1.2;
+      cx.beginPath(); cx.moveTo(X(S.flaggedAt), T); cx.lineTo(X(S.flaggedAt), T + ph); cx.stroke(); cx.setLineDash([]);
+      cx.fillStyle = css("--ink-2"); cx.font = "600 11px system-ui, sans-serif";
+      cx.textAlign = X(S.flaggedAt) > w * 0.7 ? "right" : "left";
+      cx.fillText(`first concern ${S.flaggedAt.toFixed(1)} s`, X(S.flaggedAt) + (X(S.flaggedAt) > w * 0.7 ? -5 : 5), T + 11);
+    }
+    cx.fillStyle = col; cx.beginPath(); cx.arc(X(last.t), Y(last.fused), 5, 0, 7); cx.fill();
   }
 
-  /* ---------- audio helpers ---------- */
-  function setStatus(html, kind) {
-    $("status").className = "status" + (kind === "err" ? " err" : "");
-    $("status").innerHTML = html;
+  /* ===================== help + theme ===================== */
+  const dlg = $("help-dlg");
+  $("help-btn").addEventListener("click", () => (dlg.showModal ? dlg.showModal() : dlg.setAttribute("open", "")));
+  $("help-close").addEventListener("click", () => (dlg.close ? dlg.close() : dlg.removeAttribute("open")));
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+  function initTheme() {
+    let t = null; try { t = localStorage.getItem("vg-theme"); } catch (e) { /* private mode */ }
+    if (t) document.documentElement.dataset.theme = t;
   }
+  $("theme-btn").addEventListener("click", () => {
+    const cur = document.documentElement.dataset.theme ||
+      (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    const next = cur === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem("vg-theme", next); } catch (e) { /* ignore */ }
+    drawTimeline();
+  });
+
+  /* ===================== audio helpers (recording) ===================== */
   async function captureSeconds(secs) {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia(MIC);
     const c = new (window.AudioContext || window.webkitAudioContext)();
-    try { await c.resume(); } catch (e) {}
-    const src = c.createMediaStreamSource(stream);
-    const proc = c.createScriptProcessor(4096, 1, 1);
+    try { await c.resume(); } catch (e) { /* ignore */ }
+    const src = c.createMediaStreamSource(stream), proc = c.createScriptProcessor(4096, 1, 1);
     const mute = c.createGain(); mute.gain.value = 0;
     const chunks = []; let total = 0;
     const done = new Promise((res, rej) => {
-      const timer = setTimeout(
-        () => (total > c.sampleRate * 1.5 ? res() : rej(new Error("no audio from the microphone"))),
-        (secs + 4) * 1000,
-      );
+      const timer = setTimeout(() => (total > c.sampleRate * 1.5 ? res() : rej(new Error("no sound from the microphone"))), (secs + 4) * 1000);
       proc.onaudioprocess = (e) => {
         const d = e.inputBuffer.getChannelData(0);
         chunks.push(new Float32Array(d)); total += d.length;
         if (total >= c.sampleRate * secs) { clearTimeout(timer); res(); }
       };
     });
-    try {
-      src.connect(proc); proc.connect(mute); mute.connect(c.destination);
-      await done;
-    } finally {
-      proc.onaudioprocess = null;
-      stream.getTracks().forEach((t) => t.stop());
-    }
-    const rate = c.sampleRate;
-    try { await c.close(); } catch (e) {}
+    try { src.connect(proc); proc.connect(mute); mute.connect(c.destination); await done; }
+    finally { proc.onaudioprocess = null; stream.getTracks().forEach((t) => t.stop()); }
+    const rate = c.sampleRate; try { await c.close(); } catch (e) { /* ignore */ }
     const all = new Float32Array(total); let o = 0;
     for (const ch of chunks) { all.set(ch, o); o += ch.length; }
     return { pcm: all, rate };
@@ -781,7 +1392,7 @@
     return new Blob([buf], { type: "audio/wav" });
   }
 
-  window.addEventListener("beforeunload", () => { try { stopMic(); } catch (e) {} });
+  window.addEventListener("beforeunload", () => { try { stopCall(true); } catch (e) { /* ignore */ } });
   boot();
 })();
 </script>

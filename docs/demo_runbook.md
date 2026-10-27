@@ -1,11 +1,12 @@
-# SIH26104 demo runbook — the 45-second bank call
+# SIH26104 demo runbook: the console in three minutes
 
-The story: a bank agent is on a call. The caller asks for a large transfer.
-VoiceGuard runs on the audio and turns three signals — **synthetic-voice
-detection**, **speaker consistency**, and **call context** — into one decision
-the agent can act on.
+The story: a bank agent is on a call and has to decide whether the caller is the real
+customer. VoiceGuard listens while the caller talks and answers in plain words: **looks like the
+real customer**, **double-check this caller**, or **stop**. Lead with that, not with the model
+architecture.
 
-Lead with this scenario. Do **not** open with the model architecture or a SHAP plot.
+The console is written for people who have never heard of voice cloning. Everything on the page is
+in plain language, and the technical numbers are folded away under "More detail".
 
 ---
 
@@ -13,120 +14,108 @@ Lead with this scenario. Do **not** open with the model architecture or a SHAP p
 
 ```bash
 pip install -e ".[dl,serve,prosody]"   # once
-python scripts/train_prosody.py        # once — fits the prosody model (~4 min); or use the tracked one
-python scripts/serve_demo.py           # loads AASIST + WavLM + prosody, opens http://127.0.0.1:8000
+python scripts/pick_demo_clips.py      # once: the sample calls, from the data on disk
+python scripts/make_demo_clone.py      # once, optional: the "cloned with a free tool" sample
+python scripts/serve_demo.py           # loads the models, warms them up, then serves
 ```
 
-Startup should print `prosody branch active`. The console is at `/`; the raw
-detector (file + live mic) is at `/detector`.
+`serve_demo.py` prints `warmed up in NN s` when it is ready (about 40 s on a laptop GPU). Wait for
+it: the first call after a cold start is otherwise slow. Open <http://127.0.0.1:8000>. The page
+opens ready to play: the **sample customer's voice is already on file**. No microphone is needed.
 
-## Get the demo clips — use your own voice
-
-Academic ASVspoof clips don't land with judges. Record a real person and clone them.
-
-**1. Record two clips of yourself** (Windows **Voice Recorder**, or Audacity):
-
-| Clip | Say something like | Length |
-|---|---|---|
-| `enrol` | "Hi, I'm calling about my account — I want to check my recent transactions and confirm my address on file." | ~10 s |
-| `benign` | "Can you tell me my current balance, and when my next payment is due?" | ~6 s |
-
-**2. Clone your voice** for the attack line. Free options:
-- **ElevenLabs** free tier — Instant Voice Clone from ~1 min of your audio, then generate:
-  *"I need to transfer seventy-five thousand rupees to a new beneficiary right now, it's urgent."*
-- Or any TTS site (TTSMaker, Play.ht) if you don't need it to sound like *you*.
-
-Save it as `clone.mp3` / `clone.wav`.
-
-**3. Prep all three** — trims, levels, and (for the two call clips) adds a landline codec
-so they sound like an actual phone call:
-
-```bash
-python scripts/prep_demo_call.py my_enrol.m4a  --as enrol           # keep enrol clean
-python scripts/prep_demo_call.py my_benign.m4a --as benign  --phone
-python scripts/prep_demo_call.py clone.mp3     --as cloned  --phone --check
-```
-
-`--check` prints the detector score — `cloned` must read **SYNTHETIC**. Files land in
-`demo_audio/`.
-
-_Quick fallback with no recording:_ `python scripts/pick_demo_clips.py` pulls clips
-straight from the ASVspoof data on disk (verified: benign → ALLOW, cloned → ESCALATE).
-
-Dry-run the whole script once, timed.
-
----
+Dry-run the whole script once. The calls play in real time, so the whole demo is about three
+minutes.
 
 ## The script
 
-**0:00 — frame it.** "A bank agent is on a call. The caller wants to move ₹75,000.
-Here's what the agent sees."
+**0:00 What is this?** Point at the card at the top: "Software can now copy anyone's voice.
+Fraudsters phone the bank pretending to be the customer. VoiceGuard listens to the call while it
+happens and tells the person who answered whether to trust the caller."
 
-**0:05 — set the scene.** On the console:
-- Scenario → **Payment / transfer on the call**
-- Leave "caller's number is in known contacts" **unchecked** later, but for now check it
-- Transfer amount → leave `0` for now
-- Click **Enrol caller's voice** → it records 6 s → speak, or play `enrol.wav` into the mic.
-  Pill turns to **enrolled**.
+**0:20 A real customer.** Press **Play** on *The real customer calls*. The answer panel fills in as
+the call plays: **Looks like the real customer**, risk in the green, four green checks. When the
+call ends a small card says *Correct*.
 
-**0:15 — the benign stretch.** Drop `benign.wav` onto **Call audio**.
-- All three signal bars sit low. Decision banner: **ALLOW** — "Proceed. Keep monitoring."
-- "So far, nothing unusual. Real voice, matches the enrolled caller, ordinary call."
+- "It knows this voice because the customer's real voice is on file. It compares every caller with it."
 
-**0:25 — it turns.** Drop `cloned.wav`.
-- **Synthetic voice** and/or **Prosody / behaviour** bars jump, **Speaker mismatch**
-  rises (different voice from the enrolled one). Decision → **VERIFY CALLER**.
-- "The voice reads as synthetic — both the acoustic model and the prosody check —
-  and it doesn't match who enrolled."
+**0:50 A fake voice.** Press **Play** on *A computer-generated voice*. Within a few seconds the answer
+turns to **Stop** and the meter goes red. Under "How VoiceGuard decided" two checks are red: the
+voice does not match the one on file, and the audio has strong signs of a computer-generated voice.
 
-**0:32 — context makes it serious.** On the console:
-- Uncheck "caller's number is in known contacts"
-- Type `75000` in the transfer amount (the last clip re-scores automatically)
-- Fused risk climbs, decision → **ESCALATE**, and the red **Alert** panel appears:
-  *simulated SMS to supervisor · email to fraud-ops · in-app banner*.
-- Read the recommendation aloud: **"Pause approval and verify the caller through the
-  registered number."**
-- Point at **Why**: four signals — synthetic voice, unnatural prosody, speaker
-  mismatch, unrecognised caller + ₹75,000 transfer.
+- "Four checks, one answer, and the reasons are right there."
 
-**0:40 — the agent acts.** Click **Acknowledge** on the Alert panel.
-- "The agent acknowledges — and that acknowledgement is logged too."
+**1:20 A cloned voice, and the agent acts.** Press **Play** on *Another cloned voice*. Stop appears about
+four seconds in. Click **I've seen this** in the *What to do now* box.
 
-**0:44 — the audit trail.** Point at the **Audit trail** panel — `ALLOW → ESCALATE →
-ACKNOWLEDGED`.
-- "Every decision and action is logged — scores, reasons, model version, timestamp.
-  **No audio, no transcript, no voiceprint.** An investigator gets the decision trail,
-  not a recording of the customer."
+- "The agent acknowledges the warning, and that is logged too." (More detail, then "What happened",
+  shows the trail; it holds scores and reasons, never audio.)
 
-**0:45 — done.** "Four signals, one decision, a logged action, human stays in control."
+**2:00 The hard one.** Press **Play** on *A voice cloned with a free tool*. This is the clone made
+with an open-source tool from about ten seconds of the customer's speech, and it is the honest
+hard case: it sounds close to the real voice.
+
+- Say what the card says: "It can be missed." Whatever the answer is, read the small card at the end
+  (*Caught*, *Partly caught* or *Missed*) aloud. On this sample it first warned, then eased off as the call
+  went on, and the console says exactly that instead of showing a clean green tick.
+- Do not cherry-pick: the clip was made by a fixed rule before anyone looked at the result
+  (`scripts/make_demo_clone.py`), and docs/modern_attacks.md has the measured catch rate for this
+  kind of clone.
+
+**2:40 Try a real person: yourself.** Press **Start** on *Try it with your own voice*. Say anything for
+eight seconds; VoiceGuard puts *your* voice on file, then listens live. Keep talking and it should read
+"Looks like the real customer". Then let someone else speak, or play a fake voice near the microphone,
+and watch it react.
+
+- The microphone is asked for raw audio (no browser noise suppression or gain control), which is closer
+  to what the detector was trained on. Allow the microphone in the address bar when asked.
+- To test a friend's voice note instead, open **Use your own audio**: **1.** put their voice on file
+  (upload one of their recordings), **2.** play their call (upload a different recording of the same
+  person). VoiceGuard compares the caller with the voice on file: a friend's voice played while the
+  *sample customer* is on file is correctly answered "This isn't the customer on file".
+- If a real voice is flagged, open **More detail** and press **Copy these details**: it copies the
+  numbers (no audio) so the cause can be found. Messaging-app voice notes are a known weak spot
+  (docs/real_world_audio.md).
+
+**3:00 Close.** "Decision support, not a gatekeeper: a person stays in charge." Open **How it works**
+for the plain-English glossary.
 
 ---
 
-## If the microphone misbehaves
+## If something misbehaves
 
-The enrol step needs the mic. If it fails:
-- Use `/detector` → it has a **Microphone** device picker; select the right input, test
-  that the "your mic" bar moves, then come back.
-- Or skip live enrolment: there's no file-upload enrol in this build, so for a pure
-  file demo, **enrol from a played clip** — play `enrol.wav` through the speakers into
-  the mic during the 6-second capture. Rehearse this.
-- The rest of the demo (benign / cloned / context) is **all file-based** — no mic needed.
+- **The page says the engine isn't responding.** The server is still loading; wait for
+  `warmed up in NN s`.
+- **No sample calls.** Run `python scripts/pick_demo_clips.py` (and `make_demo_clone.py`); the page lists
+  only the clips that exist on disk.
+- **The microphone misbehaves.** Skip it. Everything above works from files; the microphone is an
+  extra under *Use your own audio*.
+- **A verdict shows LISTENING instead of an answer.** The audio held no usable speech (silence,
+  noise, under a second of speech). That is deliberate: it never says "real customer" about a call
+  nobody has heard, and never raises an alarm on a muted line.
+- **Short clip, amber answer with a red meter.** VoiceGuard never says "Stop" on less than about
+  four seconds of audio; the console says so under the meter.
 
-## Honest answers to expect from judges
+## Honest answers to expect
 
-- **"Is 35.8 % In-the-Wild EER good?"** — No, and we say so. It's down from the
-  handcrafted baseline's 58.7 %, using published AASIST weights through an evaluation
-  pipeline that *proves* the number isn't inflated by the ASVspoof silence artifact —
-  something most submissions can't show. Roadmap: SSL frontend + fine-tuning to push
-  under 15 %.
-- **"Is the risk score a probability?"** — No. It's a relative measure with documented
-  operating points. Real calibration is next work.
-- **"Speaker check accuracy?"** — WavLM x-vectors; same-speaker cosine ~0.95+, needs a
-  clean 6 s enrolment. Not a biometric claim — one signal among four.
-- **"Prosody accuracy?"** — a logistic regression on F0/jitter/shimmer/HNR/pause
-  features, **26.3 % dev EER on its own** — weak, deliberately: it is a contributing
-  signal, and it catches clips the acoustic model misses. It is the noisiest of the
-  four; a single reading is not a verdict.
-- **"Indian languages / gRPC / real alerts?"** — Indian-language eval and gRPC are
-  designed, not built (show the architecture slide). Alerts are simulated in the
-  console — no real SMS/email is sent.
+- **"Does it catch every clone?"** No. A clone made with a free tool from a few seconds of speech was
+  flagged in most of our tests but not all, and the closer it sounds to the real voice the more often it
+  gets through (docs/modern_attacks.md has the numbers). A fine-tuned or commercial cloning model was not
+  tested. That is why it advises a person.
+- **"Why did it say a real person was fake?"** Two different reasons, and the console now keeps them
+  apart. *The voice does not match the one on file*: the answer says "isn't the customer on file", not
+  "fake". *The recording looks processed*: messaging-app voice notes (WhatsApp, for example) are
+  compressed and noise-suppressed, and the detector was trained on studio audio. A measured example
+  and what was changed are in docs/real_world_audio.md; real-world audio is the biggest open
+  accuracy item.
+- **"Is 35.8 % In-the-Wild EER good?"** No, and we say so. That is the published AASIST through our
+  honest front-end, down from the handcrafted baseline's 58.7 %, through an evaluation pipeline that
+  *proves* the number is not inflated by the ASVspoof silence artifact. The fused system (detector,
+  voice match, call details, channel awareness) is evaluated separately on calls with background
+  voices, phone codecs and 17 other situations; limits are in docs/stress_eval.md.
+- **"Is the risk score a probability?"** No. It is a relative score at documented operating points
+  (docs/system_eval.md). The speaker signal has a fitted calibrator that holds up on unseen speakers;
+  the detector's score was calibrated and measured to get worse on unseen attacks, so it ships no
+  calibrator (docs/calibration.md).
+- **"Indian languages / gRPC / real alerts?"** gRPC is built and verified against REST
+  (docs/grpc.md): same engine, second transport. Indian-language evaluation is a synthetic-attack
+  pilot only (docs/indic_eval.md). The alert in the console is simulated: nothing is sent.

@@ -33,6 +33,9 @@ def main() -> None:
         default=None,
         help="a .pth under models/pretrained/, e.g. AASIST_modern.pth (a fine-tune)",
     )
+    ap.add_argument(
+        "--prosody", action="store_true", help="also compute the (non-decision) prosody meter"
+    )
     ap.add_argument("--no-open", action="store_true", help="don't open a browser")
     args = ap.parse_args()
 
@@ -40,7 +43,13 @@ def main() -> None:
 
     from voiceguard.serve import create_app
 
-    app = create_app(args.model, pretrained=not args.ours, weights=args.weights)
+    app = create_app(
+        args.model,
+        pretrained=not args.ours,
+        weights=args.weights,
+        prosody=args.prosody or None,
+        warm=True,
+    )
     url = f"http://{args.host}:{args.port}"
     if not args.no_open:
         threading.Timer(1.2, lambda: webbrowser.open(url)).start()

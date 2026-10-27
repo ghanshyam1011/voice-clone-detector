@@ -67,7 +67,8 @@ message EnrollRequest {
 message EnrollResponse {
   bool enrolled = 1;
   double seconds = 2;
-  bool short = 3;            // enrolment shorter than the recommended 4s
+  bool short = 3;            // under ~4 s of speech: accepted, but a weak voiceprint
+  double speech_seconds = 4; // how much of the clip was actually speech
 }
 
 message AnalyzeRequest {
@@ -134,4 +135,19 @@ message Assessment {
   optional double speech_onset_s = 16;
   optional double first_confirmed_read_s = 17;
   AuditEvent audit_event = 18;   // set only on the hop where the action changed
+  InputQuality quality = 19;     // what was heard: speech seconds, level, fixes applied
+}
+
+// Verdict on the audio itself, before any model judges it. action = "WAITING" means
+// nothing usable yet (silence, noise, too little speech) -- not a clearance.
+message InputQuality {
+  bool usable = 1;
+  string status = 2;         // ok | no_audio | no_speech | too_short
+  string reason = 3;         // plain English; empty when ok
+  double duration_s = 4;
+  double speech_s = 5;
+  double level_dbfs = 6;
+  double clipped_frac = 7;
+  string method = 8;         // silero | energy: how speech was found
+  repeated string notes = 9; // fixes applied (DC removed, rescaled, raised, ...)
 }

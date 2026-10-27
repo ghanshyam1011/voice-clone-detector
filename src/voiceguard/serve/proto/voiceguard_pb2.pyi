@@ -67,14 +67,16 @@ class EnrollRequest(_message.Message):
     def __init__(self, session_id: _Optional[str] = ..., audio: _Optional[bytes] = ..., filename: _Optional[str] = ...) -> None: ...
 
 class EnrollResponse(_message.Message):
-    __slots__ = ("enrolled", "seconds", "short")
+    __slots__ = ("enrolled", "seconds", "short", "speech_seconds")
     ENROLLED_FIELD_NUMBER: _ClassVar[int]
     SECONDS_FIELD_NUMBER: _ClassVar[int]
     SHORT_FIELD_NUMBER: _ClassVar[int]
+    SPEECH_SECONDS_FIELD_NUMBER: _ClassVar[int]
     enrolled: bool
     seconds: float
     short: bool
-    def __init__(self, enrolled: _Optional[bool] = ..., seconds: _Optional[float] = ..., short: _Optional[bool] = ...) -> None: ...
+    speech_seconds: float
+    def __init__(self, enrolled: _Optional[bool] = ..., seconds: _Optional[float] = ..., short: _Optional[bool] = ..., speech_seconds: _Optional[float] = ...) -> None: ...
 
 class AnalyzeRequest(_message.Message):
     __slots__ = ("session_id", "audio", "filename", "hop")
@@ -160,7 +162,7 @@ class AudioChunk(_message.Message):
     def __init__(self, session_id: _Optional[str] = ..., pcm_f32le: _Optional[bytes] = ..., sample_rate: _Optional[int] = ...) -> None: ...
 
 class Assessment(_message.Message):
-    __slots__ = ("spoof", "speaker", "prosody", "context", "similarity", "enrolled", "fused", "action", "scenario", "reasons", "recommendation", "context_state", "level", "warming", "provisional", "speech_onset_s", "first_confirmed_read_s", "audit_event")
+    __slots__ = ("spoof", "speaker", "prosody", "context", "similarity", "enrolled", "fused", "action", "scenario", "reasons", "recommendation", "context_state", "level", "warming", "provisional", "speech_onset_s", "first_confirmed_read_s", "audit_event", "quality")
     SPOOF_FIELD_NUMBER: _ClassVar[int]
     SPEAKER_FIELD_NUMBER: _ClassVar[int]
     PROSODY_FIELD_NUMBER: _ClassVar[int]
@@ -179,6 +181,7 @@ class Assessment(_message.Message):
     SPEECH_ONSET_S_FIELD_NUMBER: _ClassVar[int]
     FIRST_CONFIRMED_READ_S_FIELD_NUMBER: _ClassVar[int]
     AUDIT_EVENT_FIELD_NUMBER: _ClassVar[int]
+    QUALITY_FIELD_NUMBER: _ClassVar[int]
     spoof: float
     speaker: float
     prosody: float
@@ -197,4 +200,27 @@ class Assessment(_message.Message):
     speech_onset_s: float
     first_confirmed_read_s: float
     audit_event: AuditEvent
-    def __init__(self, spoof: _Optional[float] = ..., speaker: _Optional[float] = ..., prosody: _Optional[float] = ..., context: _Optional[float] = ..., similarity: _Optional[float] = ..., enrolled: _Optional[bool] = ..., fused: _Optional[float] = ..., action: _Optional[str] = ..., scenario: _Optional[str] = ..., reasons: _Optional[_Iterable[str]] = ..., recommendation: _Optional[str] = ..., context_state: _Optional[_Union[ContextState, _Mapping]] = ..., level: _Optional[float] = ..., warming: _Optional[bool] = ..., provisional: _Optional[bool] = ..., speech_onset_s: _Optional[float] = ..., first_confirmed_read_s: _Optional[float] = ..., audit_event: _Optional[_Union[AuditEvent, _Mapping]] = ...) -> None: ...
+    quality: InputQuality
+    def __init__(self, spoof: _Optional[float] = ..., speaker: _Optional[float] = ..., prosody: _Optional[float] = ..., context: _Optional[float] = ..., similarity: _Optional[float] = ..., enrolled: _Optional[bool] = ..., fused: _Optional[float] = ..., action: _Optional[str] = ..., scenario: _Optional[str] = ..., reasons: _Optional[_Iterable[str]] = ..., recommendation: _Optional[str] = ..., context_state: _Optional[_Union[ContextState, _Mapping]] = ..., level: _Optional[float] = ..., warming: _Optional[bool] = ..., provisional: _Optional[bool] = ..., speech_onset_s: _Optional[float] = ..., first_confirmed_read_s: _Optional[float] = ..., audit_event: _Optional[_Union[AuditEvent, _Mapping]] = ..., quality: _Optional[_Union[InputQuality, _Mapping]] = ...) -> None: ...
+
+class InputQuality(_message.Message):
+    __slots__ = ("usable", "status", "reason", "duration_s", "speech_s", "level_dbfs", "clipped_frac", "method", "notes")
+    USABLE_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    REASON_FIELD_NUMBER: _ClassVar[int]
+    DURATION_S_FIELD_NUMBER: _ClassVar[int]
+    SPEECH_S_FIELD_NUMBER: _ClassVar[int]
+    LEVEL_DBFS_FIELD_NUMBER: _ClassVar[int]
+    CLIPPED_FRAC_FIELD_NUMBER: _ClassVar[int]
+    METHOD_FIELD_NUMBER: _ClassVar[int]
+    NOTES_FIELD_NUMBER: _ClassVar[int]
+    usable: bool
+    status: str
+    reason: str
+    duration_s: float
+    speech_s: float
+    level_dbfs: float
+    clipped_frac: float
+    method: str
+    notes: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, usable: _Optional[bool] = ..., status: _Optional[str] = ..., reason: _Optional[str] = ..., duration_s: _Optional[float] = ..., speech_s: _Optional[float] = ..., level_dbfs: _Optional[float] = ..., clipped_frac: _Optional[float] = ..., method: _Optional[str] = ..., notes: _Optional[_Iterable[str]] = ...) -> None: ...

@@ -66,6 +66,29 @@ decision banner: an amber "Early read in progress — confirming…" during
 the provisional phase, then "Confirmed read N.Ns after the caller started
 talking" once it clears.
 
+## 4. What the input gate and the situation descriptors cost (2026-10-23)
+
+Two things were added in front of and beside the models, so their price is stated here
+rather than discovered later. Measured on the development laptop (RTX 4050 laptop GPU,
+i5-13420H) with the GPU busy with another job at the time, so read these as upper-ish
+figures for one 10 s window:
+
+| step | cost per assessment |
+|---|--:|
+| input-quality gate (`audio/quality.py`: Silero speech check in 16 batched segments, level and clipping checks) | ≈ 120 ms |
+| channel descriptors (`audio/channel.py`, ten of them) | ≈ 63 ms (was ≈ 20 ms with five) |
+| of which mains-hum prominence / loudness-envelope autocorrelation | 24 ms / 16 ms |
+| unchanged: detector windows, speaker model, fusion | as in section 1-2 |
+
+The WebSocket path re-scores every 0.5 s, so the added ≈ 160 ms stays inside one hop on
+this machine, but it is no longer a rounding error: on a slower CPU, or with the GPU
+shared, these two steps are the first place to look. Both only read audio already in
+memory; the hum and envelope descriptors could be computed on a 4 s tail instead of 10 s
+if a deployment needs the milliseconds back (not done, and not measured for accuracy).
+The Silero check was made cheaper by batching 16 independent segments instead of stepping
+frame by frame (about 16x fewer sequential model calls; speech seconds agree with the
+library's own timestamps to within 0.1 s, `tests/test_quality.py`).
+
 ## What this is *not*
 
 - Not a sub-2 s **confirmed** acoustic read — that's still ~4 s after

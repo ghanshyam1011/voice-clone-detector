@@ -32,7 +32,15 @@ def test_static_pages_present():
     assert "/api/score" in idx and "/api/stream" in idx
     assert idx.count("<script") == idx.count("</script>")
     console = (static / "console.html").read_text(encoding="utf-8")
-    assert "/api/session" in console and "/api/session/${SID}/analyze" in console
+    for route in ("/api/session", "/enroll", "/analyze", "/reset", "/stream", "/acknowledge"):
+        assert route in console, route
+    assert "/api/demo/clips" in console and "/api/info" in console
+    assert "evidence_level" in console  # the checks are worded from the server's own levels
+    # the microphone is asked for raw: the browser's noise suppression and gain control reshape a
+    # voice like a messaging app does, which the detector reads as synthetic
+    for flag in ("echoCancellation: false", "noiseSuppression: false", "autoGainControl: false"):
+        assert flag in console, flag
+    assert 'id="own-test"' in console  # the guided own-voice test
     assert console.count("<script") == console.count("</script>")
 
 

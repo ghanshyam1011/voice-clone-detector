@@ -21,17 +21,20 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 
+from voiceguard.audio.quality import PcmStream, sanitise, stream_rate
 from voiceguard.detect import NB_SAMP
 from voiceguard.detect.scorer import _classify  # keep verdict banding in one place
-from voiceguard.serve.session import build_session_stack
+from voiceguard.risk.policy import SCENARIOS
+from voiceguard.serve import demo_clips
+from voiceguard.serve.session import LIVE_BUFFER_S, LiveBuffer, build_session_stack
 
 _STATIC = Path(__file__).parent / "static"
 _MAX_BYTES = 30 * 1024 * 1024
 _MAX_SECONDS = 150.0
 _MIN_SECONDS = 0.2
-_SESSION_BUF_S = 12.0  # rolling audio kept per streaming session
+_SESSION_BUF_S = LIVE_BUFFER_S  # rolling audio kept per streaming session
 
 
 async def _json_body(request: Request) -> dict:
@@ -66,9 +69,33 @@ def _decode(raw: bytes, filename: str, target_sr: int) -> np.ndarray:
     y = np.asarray(y, dtype=np.float32)
     if y.ndim > 1:
         y = y.mean(axis=1)
+    # a float WAV can carry NaN/Inf, a bad decoder int16-range samples: fix them here,
+    # before a resampler smears one bad sample across the clip or a model crashes on it
+    y, notes, corrupt = sanitise(y)
+    if corrupt:
+        raise ValueError(notes[0])
     if sr != target_sr:
         y = soxr.resample(y, sr, target_sr).astype(np.float32)
     return np.ascontiguousarray(y, dtype=np.float32)
+
+
+def _rate_from_message(text: str, default: int) -> int:
+    """The ``{"sampleRate": N}`` control message of the streaming sockets; anything
+    malformed (not JSON, not an object, absurd rate) leaves the current rate alone."""
+    try:
+        msg = json.loads(text)
+    except ValueError:
+        return default
+    return stream_rate(msg.get("sampleRate"), default) if isinstance(msg, dict) else default
+
+
+def _is_end_message(text: str) -> bool:
+    """The ``{"end": true}`` control message: the caller's audio is over, give the last verdict."""
+    try:
+        msg = json.loads(text)
+    except ValueError:
+        return False
+    return isinstance(msg, dict) and msg.get("end") is True
 
 
 def _verdict_payload(v, duration_s: float, window_s: float) -> dict:
@@ -86,9 +113,21 @@ def _verdict_payload(v, duration_s: float, window_s: float) -> dict:
 
 
 def create_app(
-    model_name: str = "aasist", *, pretrained: bool = True, weights: str | None = None
+    model_name: str = "aasist",
+    *,
+    pretrained: bool = True,
+    weights: str | None = None,
+    prosody: bool | None = None,
+    warm: bool = False,
 ) -> FastAPI:
-    sessions = build_session_stack(model_name, pretrained=pretrained, weights=weights)
+    """``warm=True`` pushes one synthetic call through every model before returning, so the
+    first real caller does not wait on CUDA start-up and lazy model loads (the servers pass
+    it; tests, which build many apps, do not)."""
+    sessions = build_session_stack(
+        model_name, pretrained=pretrained, weights=weights, prosody=prosody
+    )
+    if warm:
+        print(f"[voiceguard.serve] warmed up in {sessions.warm():.1f} s", flush=True)
     scorer = sessions.scorer
     window_s = NB_SAMP / scorer.sr
     lock = threading.Lock()  # serialise model access across the upload + socket handlers
@@ -121,7 +160,25 @@ def create_app(
             "window_s": round(window_s, 2),
             "genuine_below": 0.35,
             "synthetic_above": 0.65,
+            # where the risk meter turns from "looks genuine" to "double-check" to "stop",
+            # per kind of call: the console draws its zones from these, never from a copy
+            "scenarios": {
+                name: {"check_from": warn, "stop_from": stop}
+                for name, (warn, stop) in SCENARIOS.items()
+            },
+            "learned_fusion": sessions.fusion is not None,
         }
+
+    @app.get("/api/demo/clips")
+    def demo_clip_list() -> dict:
+        return {"clips": demo_clips.available()}
+
+    @app.get("/api/demo/clips/{clip_id}")
+    def demo_clip(clip_id: str):
+        path = demo_clips.clip_path(clip_id)  # a catalogue lookup, never a path join
+        if path is None:
+            raise HTTPException(404, "No such sample clip.")
+        return FileResponse(path, media_type="audio/wav")
 
     @app.post("/api/score")
     async def score(file: UploadFile = File(...), hop: float = 1.0):  # noqa: B008
@@ -149,6 +206,7 @@ def create_app(
         in_sr = scorer.sr
         hop_samples = scorer.sr // 2  # re-score every ~0.5 s of new audio
         buf = np.zeros(0, dtype=np.float32)
+        pcm = PcmStream()
         ema: float | None = None
         since = 0
         try:
@@ -157,16 +215,13 @@ def create_app(
                 if msg.get("type") == "websocket.disconnect":
                     break
                 if msg.get("text") is not None:
-                    try:
-                        in_sr = int(json.loads(msg["text"]).get("sampleRate", scorer.sr))
-                    except (ValueError, TypeError, json.JSONDecodeError):
-                        pass
+                    in_sr = _rate_from_message(msg["text"], in_sr)
                     continue
                 data = msg.get("bytes")
                 if not data:
                     continue
 
-                chunk = np.frombuffer(data, dtype=np.float32)
+                chunk = pcm.feed(data)
                 if in_sr != scorer.sr and len(chunk):
                     chunk = soxr.resample(chunk, in_sr, scorer.sr).astype(np.float32)
                 buf = np.concatenate([buf, chunk])[-NB_SAMP:]
@@ -243,8 +298,16 @@ def create_app(
             y = await loop.run_in_executor(None, _decode, raw, file.filename or "", scorer.sr)
         except Exception as exc:  # noqa: BLE001
             raise HTTPException(400, f"Could not decode audio: {exc}") from exc
-        secs = await loop.run_in_executor(None, sessions.enroll, sid, y)
-        return {"enrolled": True, "seconds": round(secs, 2), "short": secs < 4.0}
+        try:
+            res = await loop.run_in_executor(None, sessions.enroll, sid, y)
+        except ValueError as exc:  # decodes fine, but it is not clear speech
+            raise HTTPException(422, str(exc)) from exc
+        return {
+            "enrolled": True,
+            "seconds": round(res.seconds, 2),
+            "speech_seconds": round(res.speech_seconds, 2),
+            "short": res.short,
+        }
 
     @app.post("/api/session/{sid}/analyze")
     async def session_analyze(sid: str, file: UploadFile = File(...), hop: float = 1.0):  # noqa: B008
@@ -260,19 +323,27 @@ def create_app(
         dur = len(y) / scorer.sr
         if dur < _MIN_SECONDS:
             raise HTTPException(400, "Clip too short.")
-        v = await loop.run_in_executor(None, _score_waveform, y, float(np.clip(hop, 0.25, 5.0)))
         # a clip shorter than the model's fixed window was tiled/repeated to score it
         # (see CMScorer.score_waveform) -- flag it provisional so a short upload can't
         # unilaterally ESCALATE off a read built from repeated, not real, audio.
         short_clip = len(y) < NB_SAMP
         out = await loop.run_in_executor(
             None,
-            partial(
-                sessions.assess, sid, y, spoof_risk=float(v.risk), ema=False, warming=short_clip
-            ),
+            partial(sessions.assess, sid, y, ema=False, warming=short_clip),
         )
-        out["clip"] = _verdict_payload(v, dur, window_s)
+        # the per-window risk timeline is only meaningful for audio that holds speech
+        out["clip"] = None
+        if out["quality"]["usable"]:
+            v = await loop.run_in_executor(None, _score_waveform, y, float(np.clip(hop, 0.25, 5.0)))
+            out["clip"] = _verdict_payload(v, dur, window_s)
         return JSONResponse(out)
+
+    @app.post("/api/session/{sid}/reset")
+    def session_reset(sid: str):
+        """A new call on the same session: keeps the registered voice and call details."""
+        _session_or_404(sid)
+        sessions.reset_call(sid)
+        return {"reset": True}
 
     @app.post("/api/session/{sid}/acknowledge")
     async def session_acknowledge(sid: str, request: Request):
@@ -293,40 +364,71 @@ def create_app(
             await ws.close()
             return
         loop = asyncio.get_event_loop()
-        in_sr = scorer.sr
-        hop_samples = scorer.sr // 2
-        cap = int(_SESSION_BUF_S * scorer.sr)
-        buf = np.zeros(0, dtype=np.float32)
-        since = 0
+        live = LiveBuffer(scorer.sr)
+        wake, closed, ending = asyncio.Event(), asyncio.Event(), asyncio.Event()
+
+        async def reader() -> None:
+            """Takes audio off the socket the moment it arrives, whatever the assessor is
+            doing, so no stale audio queues up behind a slow assessment."""
+            try:
+                while True:
+                    msg = await ws.receive()
+                    if msg.get("type") == "websocket.disconnect":
+                        break
+                    if msg.get("text") is not None:
+                        if _is_end_message(msg["text"]):
+                            ending.set()
+                            wake.set()
+                        else:
+                            live.set_rate(_rate_from_message(msg["text"], live.in_sr))
+                        continue
+                    data = msg.get("bytes")
+                    if data and live.feed(data):
+                        wake.set()
+            except WebSocketDisconnect:
+                pass
+            finally:
+                closed.set()
+                wake.set()
+
+        reader_task = asyncio.create_task(reader())
+        last: dict | None = None
         try:
             while True:
-                msg = await ws.receive()
-                if msg.get("type") == "websocket.disconnect":
+                await wake.wait()
+                wake.clear()
+                if closed.is_set():
                     break
-                if msg.get("text") is not None:
-                    try:
-                        in_sr = int(json.loads(msg["text"]).get("sampleRate", scorer.sr))
-                    except (ValueError, TypeError, json.JSONDecodeError):
-                        pass
+                finishing = ending.is_set()
+                # a tail shorter than one hop never triggers a read of its own: at the end of
+                # the audio, assess whatever has not been assessed so the last verdict covers
+                # the whole call, or say that the previous one already does
+                snap = live.snapshot() if live.unassessed or not finishing else None
+                if snap is None:
+                    if finishing:
+                        if last is not None:
+                            await ws.send_json({**last, "final": True})
+                        break
                     continue
-                data = msg.get("bytes")
-                if not data:
-                    continue
-                chunk = np.frombuffer(data, dtype=np.float32)
-                if in_sr != scorer.sr and len(chunk):
-                    chunk = soxr.resample(chunk, in_sr, scorer.sr).astype(np.float32)
-                buf = np.concatenate([buf, chunk])[-cap:]
-                since += len(chunk)
-                if since < hop_samples or len(buf) < scorer.sr // 2:
-                    continue
-                since = 0
+                buf, heard_s = snap
                 level = float(np.abs(buf[-scorer.sr :]).max())
-                warming = len(buf) < NB_SAMP
                 out = await loop.run_in_executor(
                     None,
-                    partial(sessions.assess, sid, buf, level=round(level, 4), warming=warming),
+                    partial(
+                        sessions.assess,
+                        sid,
+                        buf,
+                        level=round(level, 4),
+                        warming=len(buf) < NB_SAMP,
+                    ),
                 )
+                out["heard_s"] = round(heard_s, 2)  # how much of the call this verdict covers
+                if finishing:
+                    out["final"] = True
+                last = out
                 await ws.send_json(out)
+                if finishing:
+                    break
         except WebSocketDisconnect:
             pass
         except Exception as exc:  # noqa: BLE001
@@ -334,5 +436,7 @@ def create_app(
                 await ws.send_json({"error": str(exc)})
             except Exception:  # noqa: BLE001
                 pass
+        finally:
+            reader_task.cancel()
 
     return app
