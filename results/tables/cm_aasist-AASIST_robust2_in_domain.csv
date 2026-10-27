@@ -1,0 +1,16 @@
+metric,split,value_pct,n,train_set,test_set,model,seed,front_end,score_direction,git_commit,utc
+eer,dev_known_attacks,4.033333333241791,8548.0,asvspoof19_la_train,asvspoof19_la_dev,aasist-AASIST_robust2,42,640b0644ae,higher=bonafide,e91c599+dirty,2026-10-22T17:13:02+00:00
+eer,eval_unknown_attacks,20.15000000009301,12000.0,asvspoof19_la_train,asvspoof19_la_eval,aasist-AASIST_robust2,42,640b0644ae,higher=bonafide,e91c599+dirty,2026-10-22T17:13:03+00:00
+eer,eval_attack_A07,34.75,,asvspoof19_la_train,asvspoof19_la_eval,aasist-AASIST_robust2,42,640b0644ae,higher=bonafide,e91c599+dirty,2026-10-22T17:13:03+00:00
+eer,eval_attack_A08,1.1235955055498261,,asvspoof19_la_train,asvspoof19_la_eval,aasist-AASIST_robust2,42,640b0644ae,higher=bonafide,e91c599+dirty,2026-10-22T17:13:04+00:00
+eer,eval_attack_A09,0.20964360584905922,,asvspoof19_la_train,asvspoof19_la_eval,aasist-AASIST_robust2,42,640b0644ae,higher=bonafide,e91c599+dirty,2026-10-22T17:13:04+00:00
+eer,eval_attack_A10,50.107991360634415,,asvspoof19_la_train,asvspoof19_la_eval,aasist-AASIST_robust2,42,640b0644ae,higher=bonafide,e91c599+dirty,2026-10-22T17:13:04+00:00
+eer,eval_attack_A11,17.920353982275845,,asvspoof19_la_train,asvspoof19_la_eval,aasist-AASIST_robust2,42,640b0644ae,higher=bonafide,e91c599+dirty,2026-10-22T17:13:04+00:00
+eer,eval_attack_A12,39.54451345744051,,asvspoof19_la_train,asvspoof19_la_eval,aasist-AASIST_robust2,42,640b0644ae,higher=bonafide,e91c599+dirty,2026-10-22T17:13:05+00:00
+eer,eval_attack_A13,5.5201698514428275,,asvspoof19_la_train,asvspoof19_la_eval,aasist-AASIST_robust2,42,640b0644ae,higher=bonafide,e91c599+dirty,2026-10-22T17:13:05+00:00
+eer,eval_attack_A14,2.716666666666669,,asvspoof19_la_train,asvspoof19_la_eval,aasist-AASIST_robust2,42,640b0644ae,higher=bonafide,e91c599+dirty,2026-10-22T17:13:05+00:00
+eer,eval_attack_A15,32.41666666666667,,asvspoof19_la_train,asvspoof19_la_eval,aasist-AASIST_robust2,42,640b0644ae,higher=bonafide,e91c599+dirty,2026-10-22T17:13:05+00:00
+eer,eval_attack_A16,8.833333333333337,,asvspoof19_la_train,asvspoof19_la_eval,aasist-AASIST_robust2,42,640b0644ae,higher=bonafide,e91c599+dirty,2026-10-22T17:13:06+00:00
+eer,eval_attack_A17,4.7191011234063645,,asvspoof19_la_train,asvspoof19_la_eval,aasist-AASIST_robust2,42,640b0644ae,higher=bonafide,e91c599+dirty,2026-10-22T17:13:06+00:00
+eer,eval_attack_A18,4.893617021237648,,asvspoof19_la_train,asvspoof19_la_eval,aasist-AASIST_robust2,42,640b0644ae,higher=bonafide,e91c599+dirty,2026-10-22T17:13:06+00:00
+eer,eval_attack_A19,2.4833333333376513,,asvspoof19_la_train,asvspoof19_la_eval,aasist-AASIST_robust2,42,640b0644ae,higher=bonafide,e91c599+dirty,2026-10-22T17:13:06+00:00

@@ -3,6 +3,7 @@ same protocol as the baseline (docs/evaluation_protocol.md).
 
     python scripts/eval_cm.py --model aasist
     python scripts/eval_cm.py --model aasist --limit-per-class 3000   # faster
+    python scripts/eval_cm.py --model aasist --weights AASIST_robust2.pth   # a fine-tuned model
 
 -> results/tables/cm_<name>_{in_domain,cross_dataset,silence_ablation}.csv
 """
@@ -16,6 +17,7 @@ for _v in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "NUMEXP
     os.environ.setdefault(_v, "2")
 
 import argparse
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -84,6 +86,12 @@ def main() -> None:
         help="load the upstream weights from models/pretrained/<MODEL>.pth "
         "(clovaai/aasist) instead of our own trained checkpoint",
     )
+    ap.add_argument(
+        "--weights",
+        default=None,
+        help="a backbone .pth under models/pretrained/ (e.g. AASIST_robust2.pth, written by "
+        "finetune_robust.py); tables are named <model>-<file stem>",
+    )
     ap.add_argument("--limit-per-class", type=int, default=None)
     ap.add_argument("--batch-size", type=int, default=16)
     ap.add_argument("--workers", type=int, default=0)
@@ -97,7 +105,11 @@ def main() -> None:
     tables = resolve(cfg, "tables")
 
     model = build_cm(args.model).to(device)
-    if args.pretrained:
+    if args.weights:
+        wpath = resolve(cfg, "results").parent / "models" / "pretrained" / args.weights
+        model.backbone.load_state_dict(torch.load(wpath, map_location=device))
+        source, tag = str(wpath), "fine-tuned backbone"
+    elif args.pretrained:
         name_map = {"aasist": "AASIST.pth", "aasist-l": "AASIST-L.pth"}
         if args.model not in name_map:
             raise SystemExit(f"--pretrained not available for {args.model}")
@@ -116,6 +128,8 @@ def main() -> None:
         tag = f"ours epoch {state.get('epoch', '?')} devEER {eer:.2f}%"
     model.eval()
     run = f"{args.model}-pretrained" if args.pretrained else args.model
+    if args.weights:
+        run = f"{args.model}-{Path(args.weights).stem}"
     print(f"{run} <- {source}  ({tag})")
 
     man = resolve(cfg, "manifests")

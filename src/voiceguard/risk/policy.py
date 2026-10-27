@@ -22,12 +22,13 @@ _RECOMMENDATION = {
     "ALLOW": "Proceed. Keep monitoring the call.",
     "VERIFY": "Ask a knowledge-based verification question before continuing.",
     "ESCALATE": "Pause approval and verify the caller through the registered number.",
+    "WAITING": "No verdict yet — not enough clear speech to judge. Keep the caller talking.",
 }
 
 
 @dataclass
 class Decision:
-    action: str  # ALLOW | VERIFY | ESCALATE
+    action: str  # ALLOW | VERIFY | ESCALATE | WAITING (no verdict: nothing usable to judge)
     score: float
     scenario: str
     reasons: list[str] = field(default_factory=list)
@@ -41,6 +42,14 @@ class Decision:
             "reasons": self.reasons,
             "recommendation": self.recommendation,
         }
+
+
+def waiting(scenario: str, reason: str) -> Decision:
+    """No verdict because there is nothing usable to judge (silence, noise, a few
+    hundred milliseconds of audio). Deliberately NOT ALLOW: ALLOW tells the agent
+    the call has been checked and cleared, which is false for a call nobody has
+    heard -- and not ESCALATE either, which would cry fraud at a muted line."""
+    return Decision("WAITING", 0.0, scenario, [reason], _RECOMMENDATION["WAITING"])
 
 
 def decide(fused: FusedRisk, scenario: str, context_reasons: list[str] | None = None) -> Decision:

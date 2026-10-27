@@ -10,7 +10,7 @@ calibration is later work.
 
 from voiceguard.risk.context import CallContext
 from voiceguard.risk.fusion import DEFAULT_WEIGHTS, FusedRisk, fuse
-from voiceguard.risk.policy import SCENARIOS, Decision, decide
+from voiceguard.risk.policy import SCENARIOS, Decision, decide, waiting
 from voiceguard.risk.signals import Signal
 
 __all__ = [
@@ -21,5 +21,6 @@ __all__ = [
     "DEFAULT_WEIGHTS",
     "Decision",
     "decide",
+    "waiting",
     "SCENARIOS",
 ]

@@ -24,6 +24,9 @@ _CODECS: dict[str, tuple[list[str], str]] = {
     "g722": (["-ar", "16000", "-c:a", "adpcm_g722"], "wav"),
     "amr_nb": (["-ar", "8000", "-c:a", "libopencore_amrnb", "-b:a", "12.2k"], "amr"),
     "opus_8k": (["-ar", "16000", "-c:a", "libopus", "-b:a", "8k"], "ogg"),
+    # messaging-app voice notes (WhatsApp: Opus, 16 kHz, roughly 16-24 kbps, speech mode)
+    "opus_16k": (["-ar", "16000", "-c:a", "libopus", "-b:a", "16k", "-application", "voip"], "ogg"),
+    "opus_24k": (["-ar", "16000", "-c:a", "libopus", "-b:a", "24k", "-application", "voip"], "ogg"),
 }
 
 CODECS = tuple(_CODECS)

@@ -7,7 +7,8 @@ protocol files, never from a directory walk or a home-made random split
 from voiceguard.data.manifests import (
     build_asvspoof_la,
     build_in_the_wild,
+    build_librispeech,
     load_manifest,
 )
 
-__all__ = ["build_asvspoof_la", "build_in_the_wild", "load_manifest"]
+__all__ = ["build_asvspoof_la", "build_in_the_wild", "build_librispeech", "load_manifest"]

@@ -78,7 +78,10 @@ class Calibrator:
         from scipy.interpolate import interp1d
 
         m.f_ = interp1d(
-            m.X_thresholds_, m.y_thresholds_, kind="linear", bounds_error=False,
+            m.X_thresholds_,
+            m.y_thresholds_,
+            kind="linear",
+            bounds_error=False,
             fill_value=(m.y_thresholds_[0], m.y_thresholds_[-1]),
         )
         m.predict = lambda x: m.f_(x)  # bind the reloaded curve as .predict

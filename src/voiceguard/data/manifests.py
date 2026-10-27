@@ -120,6 +120,40 @@ def build_in_the_wild(itw_root: str | Path, out_dir: str | Path, *, root: Path =
     return dest
 
 
+def build_librispeech(
+    ls_root: str | Path, subset: str, out_dir: str | Path, *, root: Path = REPO_ROOT
+) -> Path:
+    """Write ``librispeech_<subset>.csv`` for an official LibriSpeech subset
+    (``dev-clean``, ``test-clean``, ...): a second, non-VCTK *bona fide* domain
+    (volunteer-recorded audiobooks, many microphones) for training and testing
+    that the detectors do not simply learn "VCTK studio audio = real".
+
+    LibriSpeech ships no protocol file; the official subset directories
+    (``<subset>/<speaker>/<chapter>/<utt>.flac``) are the corpus' own split, so a
+    walk of one subset is deterministic and carries no home-made partitioning.
+    Speaker ids are prefixed ``LS_`` so they can never collide with ASVspoof's."""
+    ls_root, out_dir = Path(ls_root), Path(out_dir)
+    sub = ls_root / subset
+    files = sorted(sub.rglob("*.flac"))
+    if not files:
+        raise FileNotFoundError(f"no .flac under {sub} (extract {subset}.tar.gz there first)")
+    out = pd.DataFrame(
+        {
+            "dataset": "librispeech",
+            "split": subset,
+            "path": [_portable(f, root) for f in files],
+            "label": "bonafide",
+            "attack_id": "bonafide",
+            "speaker_id": [f"LS_{f.relative_to(sub).parts[0]}" for f in files],
+        },
+        columns=MANIFEST_COLUMNS,
+    )
+    out_dir.mkdir(parents=True, exist_ok=True)
+    dest = out_dir / f"librispeech_{subset}.csv"
+    out.to_csv(dest, index=False)
+    return dest
+
+
 def load_manifest(path: str | Path, *, root: Path = REPO_ROOT) -> pd.DataFrame:
     """Load a manifest and resolve every ``path`` to an absolute path."""
     df = pd.read_csv(path)

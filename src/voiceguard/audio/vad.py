@@ -21,9 +21,7 @@ import numpy as np
 from voiceguard.audio.preprocess import PreprocessConfig
 
 
-def speech_onset_s(
-    y: np.ndarray, sr: int, cfg: PreprocessConfig | None = None
-) -> float | None:
+def speech_onset_s(y: np.ndarray, sr: int, cfg: PreprocessConfig | None = None) -> float | None:
     """Seconds into `y` where sustained non-silence first begins.
 
     Returns None if the whole clip is at or below the silence threshold

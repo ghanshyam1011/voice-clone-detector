@@ -144,8 +144,10 @@ def main() -> None:
     rng.shuffle(speakers)
     n_fit = max(2, int(round(len(speakers) * args.fit_speaker_frac)))
     fit_speakers, test_speakers = set(speakers[:n_fit]), set(speakers[n_fit:])
-    print(f"{len(df)} bona fide clips, {len(speakers)} speakers "
-          f"-> {len(fit_speakers)} fit / {len(test_speakers)} held-out (speaker-disjoint)")
+    print(
+        f"{len(df)} bona fide clips, {len(speakers)} speakers "
+        f"-> {len(fit_speakers)} fit / {len(test_speakers)} held-out (speaker-disjoint)"
+    )
 
     embedder = SpeakerEmbedder()
     fit_df = df[df.speaker_id.isin(fit_speakers)]

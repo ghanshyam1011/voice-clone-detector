@@ -149,9 +149,7 @@ def main() -> None:
 
     man = resolve(cfg, "manifests")
     dev_df = _subsample(load_manifest(man / "asvspoof19_la_dev.csv"), args.limit_per_class, seed)
-    eval_df = _subsample(
-        load_manifest(man / "asvspoof19_la_eval.csv"), args.limit_per_class, seed
-    )
+    eval_df = _subsample(load_manifest(man / "asvspoof19_la_eval.csv"), args.limit_per_class, seed)
 
     dev_y, dev_x = _raw_logits(model, dev_df, pcfg, device, args.batch_size, args.workers)
     eval_y, eval_x = _raw_logits(model, eval_df, pcfg, device, args.batch_size, args.workers)
