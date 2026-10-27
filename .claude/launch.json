@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "voiceguard-demo",
+      "runtimeExecutable": "myenv/Scripts/python.exe",
+      "runtimeArgs": ["scripts/serve_demo.py", "--no-open", "--port", "8765"],
+      "port": 8765
+    }
+  ]
+}

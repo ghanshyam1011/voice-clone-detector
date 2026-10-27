@@ -29,6 +29,7 @@ data/interim/
 data/external/
 data/processed/
 data/modern_spoof/
+data/modern/
 data/indic_eval/
 demo_audio/
 # ...but keep the manifests -- they are the source of truth and tiny
@@ -61,16 +62,22 @@ demo_audio/
 !/models/pretrained/
 !/models/prosody/
 !/models/speaker/
+!/models/fusion/
 # ...the small fixed upstream reference weights (clovaai/aasist)
 /models/pretrained/*
 !/models/pretrained/*.pth
 !/models/pretrained/MODEL_CARD.md
+# ...and each model's calibration (operating point, a few bytes): scores mean nothing without
+# the file they were calibrated with, and a fresh checkout must not have to re-derive it
+!/models/pretrained/*_demo_calib.json
 # ...the tiny prosody logistic-regression (a few KB), NOT its scratch files
 /models/prosody/*
 !/models/prosody/*.joblib
 # ...the tiny fitted speaker-calibration mapping (two floats), see docs/calibration.md
 /models/speaker/*
 !/models/speaker/*.json
+/models/fusion/*
+!/models/fusion/*.json
 baselines/artifacts/
 results/**/*.pkl
 results/wav2vec2_finetuned/
