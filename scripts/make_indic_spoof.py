@@ -100,10 +100,14 @@ def main() -> None:
             model.speaking_rate = random.uniform(0.85, 1.2)
             enc = tok(random.choice(lines), return_tensors="pt")
             with torch.no_grad():
-                w = model(
-                    input_ids=enc["input_ids"].long(),
-                    attention_mask=enc["attention_mask"].long(),
-                ).waveform[0].numpy()
+                w = (
+                    model(
+                        input_ids=enc["input_ids"].long(),
+                        attention_mask=enc["attention_mask"].long(),
+                    )
+                    .waveform[0]
+                    .numpy()
+                )
             w = soxr.resample(w, model.config.sampling_rate, SR).astype(np.float32)
             codec = "clean"
             if random.random() < 0.5:

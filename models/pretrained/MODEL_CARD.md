@@ -1,5 +1,32 @@
 # Model Card: VoiceGuard synthetic-voice detector (AASIST, published weights)
 
+> **Update 2026-10-23.** The serving default is now `AASIST_robust2.pth`, a further
+> fine-tune of `AASIST_robust.pth` (`scripts/finetune_robust.py --aug v2`, ASVspoof 2019
+> LA *train* only) that adds room reverberation, speakerphone, narrow-band, clipping,
+> packet-loss and mains-hum degradation, applied identically to both classes and in the
+> order a real call reaches the model; music and burst noise are deliberately never
+> trained on. Dev EER on what it was trained for (room/line mix) **21.0 % → 11.6 %**, on
+> 5 dB background voices **17.8 % → 13.2 %**, on never-trained music/burst noise
+> **5.2 % → 4.4 %**, clean **3.4 % → 3.8 %**. Standing gates, 6,000 clips per class:
+> ASVspoof dev EER **4.03 %**, eval **20.15 %** (upstream weights 9.6 / 23.3 %),
+> In-the-Wild **36.18 %** (35.8 %: unchanged, this is robustness to distortion, not new
+> synthesis), silence-only ablation **44.75 %** (no shortcut). On 14 situations the system
+> had never seen it lifts balanced system accuracy 78.6 % → 82.6 % with the fusion recipe
+> held fixed; see `docs/stress_eval.md`. It is calibrated by
+> `AASIST_robust2_demo_calib.json` (committed next to the weights: the scores mean
+> nothing without it), and the learned fusion records which detector and calibration it was
+> fitted for (`fusion.json` → `detector`), warning at start-up if they disagree.
+>
+> **Update 2026-10-14.** The serving default is now `AASIST_robust.pth`: the
+> published AASIST weights **fine-tuned by this project** (`scripts/finetune_robust.py`,
+> ASVspoof 2019 LA *train* only) with class-independent background-voice, noise,
+> telephone-codec and RawBoost augmentation. ASVspoof dev EER (500 clips/class):
+> clean **7.6 % → 3.4 %**, with background voices at 5 dB SNR **48.2 % → 27.0 %**
+> (`results/tables/finetune_robust_log.csv`). Dev clips chose the checkpoint, so
+> treat those as selection-set numbers; held-out, system-level numbers are in
+> `docs/system_eval.md`. Everything below describes the *published-weights*
+> baseline and remains accurate for it.
+
 _Added 2026-09-25, against `docs/project_status.md` item j. Format follows
 Mitchell et al., "Model Cards for Model Reporting" (FAT* 2019), scoped to
 what this project actually measured -- every number below is reproducible
@@ -173,6 +200,16 @@ instead, as the more robust-under-shift of the two, not because it is
 
 ## Caveats and recommendations
 
+- **This detector is nearly blind to modern voice clones.** Measured 2026-10-23
+  (`docs/modern_attacks.md`): only 2-3 % of reads of kNN-VC voice-conversion clones and of
+  SpeechT5 clones reach a detector score of 0.5 (the older VITS-style MMS-TTS: 40-48 %). The
+  fused system flags 71-75 % of clean-line kNN-VC calls (83-100 % under noise or a codec),
+  through the speaker-consistency head, not the detector; with the clone head used until
+  2026-10-23 it was 100 % and 92.5 % in a sweep over 12-107 s of reference audio, but that head
+  partly read recording style and called a real WhatsApp voice note fake
+  (`docs/real_world_audio.md`). About half of SpeechT5 calls get through. It was trained on
+  2019 attack systems and the new fine-tunes teach robustness to distortion, not new
+  synthesis. Do not read the ASVspoof EERs as protection against current cloning tools.
 - **35.8% cross-dataset EER is not a deployable figure on its own** --
   this is the central, explicitly stated limitation across this project's
   docs (`README.md` §5, `docs/project_status.md` item c). Treat this

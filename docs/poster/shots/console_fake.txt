@@ -1,0 +1,30 @@
+Stop: this may be a fake voice
+
+The audio has the marks of a cloned or computer-generated voice.
+
+Call finished
+Caught
+This call was a fake voice, and VoiceGuard flagged it.
+Risk level
+100 out of 100
+Looks genuine
+Double-check
+Stop and verify
+A relative score of how far this call is from a normal one, not the chance that it is fake.
+WHAT TO DO NOW
+Pause any payment or change. End the call and phone the customer back on their registered number.
+I've seen this
+HOW VOICEGUARD DECIDED
+Does the voice match the registered customer?
+Matches the registered customer
+The caller sounds like the person whose voice is on file.
+Are there signs of a computer-generated voice?
+Strong signs
+The audio has the marks of a computer-generated or cloned voice.
+Is anything about the call itself unusual?
+Nothing unusual
+A known number and no large amount.
+Is the audio clear?
+Clear
+No noise, echo or distortion to speak of.
+More detail: risk over time, activity log, technical data

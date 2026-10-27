@@ -1,0 +1,29 @@
+Looks like the real customer
+
+No signs of a fake or cloned voice. You can carry on with the call as normal.
+
+Call finished
+Correct
+This was the real customer, and VoiceGuard recognised them.
+Risk level
+5 out of 100
+Looks genuine
+Double-check
+Stop and verify
+A relative score of how far this call is from a normal one, not the chance that it is fake.
+WHAT TO DO NOW
+Carry on as normal, and stay alert if the request changes.
+HOW VOICEGUARD DECIDED
+Does the voice match the registered customer?
+Matches the registered customer
+The caller sounds like the person whose voice is on file.
+Are there signs of a computer-generated voice?
+None found
+Nothing in the sound suggests a computer-generated voice. Some newer cloning tools are hard to hear this way, so the voice match matters too.
+Is anything about the call itself unusual?
+Nothing unusual
+A known number and no large amount.
+Is the audio clear?
+Clear
+No noise, echo or distortion to speak of.
+More detail: risk over time, activity log, technical data

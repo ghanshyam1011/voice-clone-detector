@@ -19,6 +19,7 @@ for _v in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS"):
     os.environ.setdefault(_v, "4")
 
 import argparse
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -108,7 +109,10 @@ def main() -> None:
             )
         )
 
-    out = resolve(cfg, "tables") / "indic_eval.csv"
+    # one file per detector: the upstream-weights rows quoted in the README must survive
+    # an evaluation of a fine-tune
+    name = "indic_eval.csv" if not args.weights else f"indic_eval_{Path(args.weights).stem}.csv"
+    out = resolve(cfg, "tables") / name
     pd.DataFrame(rows).to_csv(out, index=False)
     df = pd.DataFrame(table)
     print("\nIndicCall-Eval (pilot) — synthetic-voice detector per language\n")
