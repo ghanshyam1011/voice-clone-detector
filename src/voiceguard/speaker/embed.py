@@ -35,8 +35,13 @@ def _repair_pos_conv(model, model_name: str) -> None:
         with torch.no_grad():
             param.weight.original0.copy_(g)
             param.weight.original1.copy_(v)
-    except Exception:  # noqa: BLE001 -- fall back to as-loaded weights
-        pass
+    except Exception as exc:  # noqa: BLE001
+        # Running on without them would not crash: it would quietly weaken speaker
+        # verification (two layers of the model left random), in a security control.
+        raise RuntimeError(
+            f"could not restore the positional-conv weights of {model_name} "
+            f"({type(exc).__name__}: {exc}); refusing to run the speaker model degraded"
+        ) from exc
 
 
 class SpeakerEmbedder:
@@ -53,9 +58,7 @@ class SpeakerEmbedder:
         import torch
         from transformers import Wav2Vec2FeatureExtractor, WavLMForXVector
 
-        self._device = self._device or torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu"
-        )
+        self._device = self._device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self._fe = Wav2Vec2FeatureExtractor.from_pretrained(self.model_name)
         model = WavLMForXVector.from_pretrained(self.model_name)
         _repair_pos_conv(model, self.model_name)

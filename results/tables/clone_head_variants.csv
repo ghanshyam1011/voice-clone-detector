@@ -1,0 +1,10 @@
+clone_head,evaluation,accuracy,balanced,genuine_accepted,clone_flagged,impostor_flagged,genuine_escalated,attacks_escalated,eer,source
+full (shipped until 2026-10-23),speaker-held-out (OOF),93.1,92.9,92.4,95.6,88.9,3.4,85.7,7.0,"scripts/fit_fusion.py --tag _r2,_r2s (48 eval speakers, 4157 reads; dev = 10 untouched speakers, 1520 reads); --esc-fpr 0.03"
+full (shipped until 2026-10-23),situation-held-out,91.9,89.2,83.7,94.6,94.8,9.2,86.5,,"scripts/fit_fusion.py --tag _r2,_r2s (48 eval speakers, 4157 reads; dev = 10 untouched speakers, 1520 reads); --esc-fpr 0.03"
+full (shipped until 2026-10-23),untouched dev,92.3,92.7,93.4,95.7,84.5,2.6,85.4,7.5,"scripts/fit_fusion.py --tag _r2,_r2s (48 eval speakers, 4157 reads; dev = 10 untouched speakers, 1520 reads); --esc-fpr 0.03"
+interactions only,speaker-held-out (OOF),91.7,90.5,88.3,93.8,90.7,2.8,55.8,9.9,"scripts/fit_fusion.py --tag _r2,_r2s (48 eval speakers, 4157 reads; dev = 10 untouched speakers, 1520 reads); --esc-fpr 0.03"
+interactions only,situation-held-out,91.1,87.1,79.2,95.4,94.5,9.2,62.1,,"scripts/fit_fusion.py --tag _r2,_r2s (48 eval speakers, 4157 reads; dev = 10 untouched speakers, 1520 reads); --esc-fpr 0.03"
+interactions only,untouched dev,92.7,91.9,90.3,97.9,84.7,1.3,74.4,7.5,"scripts/fit_fusion.py --tag _r2,_r2s (48 eval speakers, 4157 reads; dev = 10 untouched speakers, 1520 reads); --esc-fpr 0.03"
+trust-weighted gain (shipped),speaker-held-out (OOF),90.8,90.2,89.0,92.1,89.8,3.1,53.9,9.8,"scripts/fit_fusion.py --tag _r2,_r2s (48 eval speakers, 4157 reads; dev = 10 untouched speakers, 1520 reads); --esc-fpr 0.03"
+trust-weighted gain (shipped),situation-held-out,90.3,86.6,79.2,93.7,94.6,8.6,61.0,,"scripts/fit_fusion.py --tag _r2,_r2s (48 eval speakers, 4157 reads; dev = 10 untouched speakers, 1520 reads); --esc-fpr 0.03"
+trust-weighted gain (shipped),untouched dev,92.4,91.8,90.5,97.6,83.9,1.3,72.6,7.9,"scripts/fit_fusion.py --tag _r2,_r2s (48 eval speakers, 4157 reads; dev = 10 untouched speakers, 1520 reads); --esc-fpr 0.03"

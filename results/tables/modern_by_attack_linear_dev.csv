@@ -1,0 +1,13 @@
+cond,attack,n,flagged,ESC,genOK,EER
+clean,bonafide,20,0.85,0.75,1.0,0.0
+clean,knnvc,20,1.0,0.75,1.0,0.0
+clean,mms,20,1.0,1.0,1.0,0.0
+clean,speecht5x,20,0.5,0.45,1.0,0.05000000000000012
+babble10,bonafide,20,0.85,0.85,1.0,0.10000000000027381
+babble10,knnvc,20,1.0,1.0,1.0,0.0
+babble10,mms,20,1.0,1.0,1.0,0.0
+babble10,speecht5x,20,0.55,0.35,1.0,0.10000000000007211
+ulaw,bonafide,20,0.85,0.75,1.0,0.09999999999998407
+ulaw,knnvc,20,1.0,0.95,1.0,0.0
+ulaw,mms,20,1.0,1.0,1.0,0.0
+ulaw,speecht5x,20,0.6,0.5,1.0,0.05000000000009511
